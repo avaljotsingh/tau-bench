@@ -15,6 +15,20 @@ from tau_bench.agents.base import Agent
 from tau_bench.types import EnvRunResult, RunConfig
 from litellm import provider_list
 from tau_bench.envs.user import UserStrategy
+from azure.ai.inference.models._models import FunctionCall
+
+def make_serializable(obj):
+    if isinstance(obj, FunctionCall):
+        return obj.as_dict()
+
+    elif isinstance(obj, list):
+        return [make_serializable(item) for item in obj]
+
+    elif isinstance(obj, dict):
+        return {key: make_serializable(value) for key, value in obj.items()}
+
+    else:
+        return obj
 
 
 def run(config: RunConfig) -> List[EnvRunResult]:
@@ -106,12 +120,15 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                     with open(ckpt_path, "r") as f:
                         data = json.load(f)
                 with open(ckpt_path, "w") as f:
-                    json.dump(data + [result.model_dump()], f, indent=2)
+                    json.dump(data + [make_serializable(result.model_dump())], f, indent=2)
             return result
 
-        with ThreadPoolExecutor(max_workers=config.max_concurrency) as executor:
-            res = list(executor.map(_run, idxs))
-            results.extend(res)
+        # with ThreadPoolExecutor(max_workers=config.max_concurrency) as executor:
+        #     res = list(executor.map(_run, idxs))
+        #     results.extend(res)
+        for i in idxs:
+            result = _run(i)
+            results.append(result)
 
     display_metrics(results)
 

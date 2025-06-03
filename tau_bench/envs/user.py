@@ -1,10 +1,12 @@
 # Copyright Sierra
-
+from colorama import init
+from termcolor import colored
 import abc
 import enum
-from litellm import completion
+# from litellm import completion
 
 from typing import Optional, List, Dict, Any, Union
+from tau_bench.trapi_infer import completion, model_dump
 
 
 class BaseUserSimulationEnv(abc.ABC):
@@ -48,8 +50,10 @@ class LLMUserSimulationEnv(BaseUserSimulationEnv):
             model=self.model, custom_llm_provider=self.provider, messages=messages
         )
         message = res.choices[0].message
-        self.messages.append(message.model_dump())
-        self.total_cost = res._hidden_params["response_cost"]
+        self.messages.append(model_dump(message))
+        # self.messages.append(MyChatCompletion.from_external(message).model_dump())
+        # self.total_cost = res._hidden_params["response_cost"]
+        self.total_cost = res.usage.total_tokens
         return message.content
 
     def build_system_prompt(self, instruction: Optional[str]) -> str:
@@ -79,7 +83,8 @@ Rules:
 
     def step(self, content: str) -> str:
         self.messages.append({"role": "user", "content": content})
-        return self.generate_next_message(self.messages)
+        res = self.generate_next_message(self.messages)
+        return res
 
     def get_total_cost(self) -> float:
         return self.total_cost
@@ -119,8 +124,9 @@ User Response:
             model=self.model, custom_llm_provider=self.provider, messages=messages
         )
         message = res.choices[0].message
-        self.messages.append(message.model_dump())
-        self.total_cost = res._hidden_params["response_cost"]
+        self.messages.append(model_dump(message))
+        # self.total_cost = res._hidden_params["response_cost"]
+        self.total_cost = res.usage.total_tokens
         return self.parse_response(message.content)
 
     def reset(self, instruction: Optional[str] = None) -> str:
@@ -168,7 +174,8 @@ class VerifyUserSimulationEnv(LLMUserSimulationEnv):
                 model=self.model, custom_llm_provider=self.provider, messages=messages
             )
             cur_message = res.choices[0].message
-            self.total_cost = res._hidden_params["response_cost"]
+            # self.total_cost = res._hidden_params["response_cost"]
+            self.total_cost = res.usage.total_tokens
             if verify(self.model, self.provider, cur_message, messages):
                 self.messages.append(cur_message.model_dump())
                 return cur_message.content

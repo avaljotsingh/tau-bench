@@ -1,13 +1,15 @@
 # Copyright Sierra
 
 import json
-from litellm import completion
+# from litellm import completion
+from tau_bench.trapi_infer import completion, model_dump
 from typing import List, Optional, Dict, Any
 
 from tau_bench.agents.base import Agent
 from tau_bench.envs.base import Env
 from tau_bench.types import SolveResult, Action, RESPOND_ACTION_NAME
-
+from colorama import init
+from termcolor import colored
 
 class ToolCallingAgent(Agent):
     def __init__(
@@ -44,8 +46,11 @@ class ToolCallingAgent(Agent):
                 tools=self.tools_info,
                 temperature=self.temperature,
             )
-            next_message = res.choices[0].message.model_dump()
-            total_cost += res._hidden_params["response_cost"]
+            temp = res.choices[0].message
+            next_message = model_dump(temp)
+            # next_message = res.choices[0].message
+            # total_cost += res._hidden_params["response_cost"]
+            total_cost += res.usage.total_tokens
             action = message_to_action(next_message)
             env_response = env.step(action)
             reward = env_response.reward
@@ -70,6 +75,7 @@ class ToolCallingAgent(Agent):
                         {"role": "user", "content": env_response.observation},
                     ]
                 )
+            # print(colored(f'Next set of messages is {messages}', 'cyan'))
             if env_response.done:
                 break
         return SolveResult(

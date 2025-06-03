@@ -1,5 +1,6 @@
 # Copyright Sierra
-
+from colorama import init
+from termcolor import colored
 import random
 from hashlib import sha256
 from tau_bench.envs.tool import Tool
