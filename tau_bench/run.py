@@ -35,7 +35,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
     assert config.env in ["retail", "airline"], "Only retail and airline envs are supported"
     assert config.model_provider in provider_list, "Invalid model provider"
     assert config.user_model_provider in provider_list, "Invalid user model provider"
-    assert config.agent_strategy in ["tool-calling", "act", "react", "few-shot"], "Invalid agent strategy"
+    assert config.agent_strategy in ["tool-calling", "act", "react", "few-shot", "one-shot"], "Invalid agent strategy"
     assert config.task_split in ["train", "test", "dev"], "Invalid task split"
     assert config.user_strategy in [item.value for item in UserStrategy], "Invalid user strategy"
 
@@ -133,7 +133,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
     display_metrics(results)
 
     with open(ckpt_path, "w") as f:
-        json.dump([result.model_dump() for result in results], f, indent=2)
+        json.dump([make_serializable(result.model_dump()) for result in results], f, indent=2)
         print(f"\n📄 Results saved to {ckpt_path}\n")
     return results
 
@@ -146,6 +146,17 @@ def agent_factory(
         from tau_bench.agents.tool_calling_agent import ToolCallingAgent
 
         return ToolCallingAgent(
+            tools_info=tools_info,
+            wiki=wiki,
+            model=config.model,
+            provider=config.model_provider,
+            temperature=config.temperature,
+        )
+    elif config.agent_strategy == "one-shot":
+        # native tool calling
+        from tau_bench.agents.one_shot_agent import OneShotAgent
+
+        return OneShotAgent(
             tools_info=tools_info,
             wiki=wiki,
             model=config.model,

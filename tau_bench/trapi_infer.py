@@ -89,6 +89,5 @@ def completion(*args, **kwargs):
     allowed_params = sig.parameters
 
     filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_params}
-    print(filtered_kwargs.keys())
     res = client.complete(*args, **filtered_kwargs)
     return res

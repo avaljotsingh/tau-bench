@@ -1,5 +1,4 @@
 # Copyright Sierra
-from colorama import init
 from termcolor import colored
 import abc
 import enum
@@ -70,6 +69,57 @@ Rules:
 - If the instruction goal is satisified, generate '###STOP###' as a standalone message without anything else to end the conversation.
 - Do not repeat the exact instruction in the conversation. Instead, use your own words to convey the same information.
 - Try to make the conversation as natural as possible, and stick to the personalities in the instruction."""
+
+    def reset(self, instruction: Optional[str] = None) -> str:
+        self.messages = [
+            {
+                "role": "system",
+                "content": self.build_system_prompt(instruction=instruction),
+            },
+            {"role": "user", "content": "Hi! How can I help you today?"},
+        ]
+        return self.generate_next_message(self.messages)
+
+    def step(self, content: str) -> str:
+        self.messages.append({"role": "user", "content": content})
+        res = self.generate_next_message(self.messages)
+        return res
+
+    def get_total_cost(self) -> float:
+        return self.total_cost
+    
+class OneShotLLMUserSimulationEnv(BaseUserSimulationEnv):
+    def __init__(self, model: str, provider: str) -> None:
+        super().__init__()
+        self.messages: List[Dict[str, Any]] = []
+        self.model = model
+        self.provider = provider
+        self.total_cost = 0.0
+        self.reset()
+
+    def generate_next_message(self, messages: List[Dict[str, Any]]) -> str:
+        res = completion(
+            model=self.model, custom_llm_provider=self.provider, messages=messages
+        )
+        message = res.choices[0].message
+        self.messages.append(model_dump(message))
+        # self.messages.append(MyChatCompletion.from_external(message).model_dump())
+        # self.total_cost = res._hidden_params["response_cost"]
+        self.total_cost = res.usage.total_tokens
+        return message.content
+
+    def build_system_prompt(self, instruction: Optional[str]) -> str:
+        instruction_display = (
+            ("\n\nInstruction: " + instruction + "\n")
+            if instruction is not None
+            else ""
+        )
+        return f"""You are a user interacting with an agent.{instruction_display}
+Rules:
+- Generate the complete message at once. Do not miss anything, because it may make the user intent ambiguous.
+- Do not hallucinate information that is not provided in the instruction. For example, if the agent asks for the order id but it is not mentioned in the instruction, do not make up an order id, just say you do not remember or have it.
+- Give all the personal details too, so that the agent can identify you correctly in the database.
+- Do not repeat the exact instruction in the conversation. Instead, use your own words to convey the same information."""
 
     def reset(self, instruction: Optional[str] = None) -> str:
         self.messages = [
@@ -319,6 +369,7 @@ class ReflectionUserSimulationEnv(LLMUserSimulationEnv):
 class UserStrategy(enum.Enum):
     HUMAN = "human"
     LLM = "llm"
+    ONESHOT = "one-shot"
     REACT = "react"
     VERIFY = "verify"
     REFLECTION = "reflection"
@@ -339,6 +390,12 @@ def load_user(
         if provider is None:
             raise ValueError("LLM user strategy requires a model provider")
         return LLMUserSimulationEnv(model=model, provider=provider)
+    elif user_strategy == UserStrategy.ONESHOT:
+        if model is None:
+            raise ValueError("LLM user strategy requires a model")
+        if provider is None:
+            raise ValueError("LLM user strategy requires a model provider")
+        return OneShotLLMUserSimulationEnv(model=model, provider=provider)
     elif user_strategy == UserStrategy.REACT:
         if model is None:
             raise ValueError("React user strategy requires a model")
