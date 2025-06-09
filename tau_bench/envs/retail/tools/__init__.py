@@ -5,6 +5,7 @@ from .cancel_pending_order import CancelPendingOrder
 from .exchange_delivered_order_items import ExchangeDeliveredOrderItems
 from .find_user_id_by_email import FindUserIdByEmail
 from .find_user_id_by_name_zip import FindUserIdByNameZip
+from .get_input_from_user import GetInputFromUser
 from .get_order_details import GetOrderDetails
 from .get_product_details import GetProductDetails
 from .get_user_details import GetUserDetails
@@ -24,6 +25,7 @@ ALL_TOOLS = [
     ExchangeDeliveredOrderItems,
     FindUserIdByEmail,
     FindUserIdByNameZip,
+    GetInputFromUser,
     GetOrderDetails,
     GetProductDetails,
     GetUserDetails,

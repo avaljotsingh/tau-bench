@@ -33,9 +33,11 @@ def get_function_infos():
         cls = load_tool_subclass_from_file(file_path)
         instance = cls()
         info = instance.get_info()
+        parameters = info['function']['parameters']['required']
+        info = {'name': info['function']['name'], 'parameters': parameters}
         infos[file_path.split('\\')[-1]] = info
         
 
-    return infos.keys()
+    return infos
 
 print(get_function_infos())

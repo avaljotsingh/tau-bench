@@ -1,42 +1,14 @@
 import ast
 import contextlib
 import re
-
 from code import Code
 
-def insert_pass_in_empty_blocks(code_str):
-    lines = code_str.splitlines()
-    new_lines = []
-    i = 0
-    while i < len(lines):
-        line = lines[i]
-        new_lines.append(line)
-        block_header = re.match(r'^\s*(if|elif|else|for|while|try|except|finally)\b.*:\s*$', line)
-        if block_header:
-            indent = len(line) - len(line.lstrip())
-            j = i + 1
-            has_code = False
-            while j < len(lines):
-                next_line = lines[j]
-                next_indent = len(next_line) - len(next_line.lstrip())
-                if next_indent <= indent:
-                    break  
-                if next_line.strip() and not next_line.strip().startswith("#"):
-                    has_code = True
-                    break
-                j += 1
-            if not has_code:
-                new_lines.append(" " * (indent + 4) + "pass")
-        i += 1
-    return '\n'.join(new_lines)
-
-
-class DeadCodeDetector(ast.NodeVisitor):
+class DeadCodeAnalyzer(ast.NodeVisitor):
     def __init__(self):
         self.assigned = set()
         self.used = set()
-        self.assignments = {}  
-        self.dead_nodes = []   
+        self.assignments = {}
+        self.dead_nodes = []
         self.unreachable_stack = [False]
 
     def is_unreachable(self):
@@ -142,38 +114,61 @@ class DeadCodeDetector(ast.NodeVisitor):
                 self.mark_node_as_dead(node)
         super().generic_visit(node)
 
-def no_dead_code(code):
-    detector = DeadCodeDetector()
-    detector.visit(code.code_ast)
-    unused_vars = detector.assigned - detector.used
-    for var in unused_vars:
-        for lineno in detector.assignments.get(var, []):
-            for node in ast.walk(code.code_ast):
-                if isinstance(node, ast.Assign) and node.lineno == lineno:
-                    detector.mark_node_as_dead(node)
+    @staticmethod
+    def insert_pass_in_empty_blocks(code_str):
+        lines = code_str.splitlines()
+        new_lines = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            new_lines.append(line)
+            block_header = re.match(r'^\s*(if|elif|else|for|while|try|except|finally)\b.*:\s*$', line)
+            if block_header:
+                indent = len(line) - len(line.lstrip())
+                j = i + 1
+                has_code = False
+                while j < len(lines):
+                    next_line = lines[j]
+                    next_indent = len(next_line) - len(next_line.lstrip())
+                    if next_indent <= indent:
+                        break
+                    if next_line.strip() and not next_line.strip().startswith("#"):
+                        has_code = True
+                        break
+                    j += 1
+                if not has_code:
+                    new_lines.append(" " * (indent + 4) + "pass")
+            i += 1
+        return '\n'.join(new_lines)
 
-    flag = len(detector.dead_nodes) == 0
-    return flag, detector.dead_nodes, unused_vars
+    def analyze(self, code_obj):
+        self.visit(code_obj.code_ast)
+        unused_vars = self.assigned - self.used
+        for var in unused_vars:
+            for lineno in self.assignments.get(var, []):
+                for node in ast.walk(code_obj.code_ast):
+                    if isinstance(node, ast.Assign) and node.lineno == lineno:
+                        self.mark_node_as_dead(node)
 
-def remove_dead_code(code):
-    flag, dead_nodes, _ = no_dead_code(code)
+        all_dead = len(self.dead_nodes) == 0
+        return all_dead, self.dead_nodes, unused_vars
 
-    if flag:
-        return code
+    def remove_dead_code(self, code_obj):
+        flag, dead_nodes, _ = self.analyze(code_obj)
+        if flag:
+            return code_obj
 
-    # Get all line spans to remove
-    dead_lines = set()
-    for node in dead_nodes:
-        start = node.lineno
-        end = getattr(node, 'end_lineno', start)
-        dead_lines.update(range(start, end + 1))
+        dead_lines = set()
+        for node in dead_nodes:
+            start = node.lineno
+            end = getattr(node, 'end_lineno', start)
+            dead_lines.update(range(start, end + 1))
 
-    code_lines = code.code_str.splitlines()
-    new_code_lines = [
-        line for i, line in enumerate(code_lines, start=1)
-        if i not in dead_lines
-    ]
-    new_code_str = insert_pass_in_empty_blocks('\n'.join(new_code_lines))
-    new_code = Code(new_code_str)
-
-    return new_code 
+        code_lines = code_obj.code_str.splitlines()
+        new_code_lines = [
+            line for i, line in enumerate(code_lines, start=1)
+            if i not in dead_lines
+        ]
+        new_code_str = self.insert_pass_in_empty_blocks('\n'.join(new_code_lines))
+        new_code_obj = Code(new_code_str)
+        return new_code_obj

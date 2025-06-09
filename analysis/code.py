@@ -5,11 +5,13 @@ allowed_functions = ['calculate', 'cancel_pending_order', 'exchange_delivered_or
 class Code:
     import_statements = [f'from tau_bench.envs.retail.tools.{i} import {i}\n' for i in allowed_functions]
     
-    def __init__(self, code_str):
+    def __init__(self, code_str, no_ast=False):
         self.code_str = code_str 
+        self.no_ast = no_ast
         self.clean_code()
         self.add_imports()
-        self.code_ast = ast.parse(self.code_str)
+        if not no_ast:
+            self.code_ast = ast.parse(self.code_str)
         
     def clean_code(self):
         lines = self.code_str.strip().split('\n')
@@ -18,7 +20,7 @@ class Code:
         if lines[-1].startswith("```"):
             lines = lines[:-1]
         self.code_str = '\n'.join(lines)
-        self.remove_comments()
+        # self.remove_comments()
         lines = self.code_str.splitlines()
         new_lines = []
         for line in lines:
@@ -28,6 +30,13 @@ class Code:
 
     def add_imports(self):
         self.code_str = ''.join(Code.import_statements) + self.code_str
+
+    def remove_imports(self):
+        lines = self.code_str.splitlines()
+        lines = lines[len(Code.import_statements):]
+        self.code_str = '\n'.join(lines)
+        if not self.no_ast:
+            self.code_ast = ast.parse(self.code_str)
 
     def remove_comments(self):
         lines = self.code_str.splitlines()
@@ -47,14 +56,15 @@ class Code:
             if line.strip(): 
                 numbered_lines.append(f"{line_num:3d}: {line}")
                 line_num += 1
-        self.code_str = "\n".join(numbered_lines)
+        return "\n".join(numbered_lines)
         
 
-    def pretty_print_code(self, line_numbers=True):
+    def pretty_print(self, line_numbers=True):
         if line_numbers:
             print(self.add_line_numbers(self.code_str))
         else:
             print(self.code_str)
+        print()
 
     
 

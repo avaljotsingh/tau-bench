@@ -2,10 +2,10 @@ import ast
 import builtins
 from termcolor import colored
 
-from dead_code import no_dead_code, remove_dead_code
 from code import Code
-
-
+from dead_code import DeadCodeAnalyzer
+from type_checker import TypeChecker
+from undefined_vars import UndefinedVariableAnalyzer
 
 class StaticChecker:
     def __init__(self, code: Code):
@@ -74,7 +74,7 @@ class StaticChecker:
         
         return len(disallowed_calls) == 0, disallowed_calls, func_to_lib
     
-    def check_for(self, flag):
+    def analyze_for(self, flag):
         if flag == 'syntax':
             if not self.is_correct_syntax():
                 return False, 'The code generated is syntactically wrong'
@@ -85,23 +85,40 @@ class StaticChecker:
                 return False, f'The code generated has invalid function calls. The incorrect functions are {invalid_funcs}'
             
         elif flag == 'check_dead_code':
-            flag, _, unused_vars = no_dead_code(self.code)
+            analyzer = DeadCodeAnalyzer()
+            flag, _, unused_vars = analyzer.analyze(self.code)
             if not flag:
-                return False, f'The code generated has dead code. The unused variables are {unused_vars}'
+                return False, str(unused_vars)
+            
+        elif flag == 'type_check':
+            analyzer = TypeChecker()
+            flag, errors = analyzer.analyze(self.code)
+            if not flag:
+                return flag, str(errors)
+        
+        elif flag == 'undefined_vars':
+            analyzer = UndefinedVariableAnalyzer()
+            flag, undefined_vars = analyzer.analyze(self.code)
+            if not flag:
+                return flag, f'The code generated uses undefined variables: {undefined_vars}'
             
         return True, None
     
     def modify(self, flag):
         if flag == 'remove_dead_code':
-            self.code = remove_dead_code(self.code)
+            analyzer = DeadCodeAnalyzer()
+            self.code = analyzer.remove_dead_code(self.code)
 
-    def check(self, flags):
-        modifying_checks = ['remove_dead_code']
-        for flag in flags:
-            if flag in modifying_checks:
-                self.modify(flag)
+    def analyze(self, properties):
+        results = {}
+        modifying_properties = ['remove_dead_code']
+        for property in properties:
+            if property in modifying_properties:
+                self.modify(property)
             else:
-                flag, comment = self.check_for(flag)
-                if not flag:
-                    return flag, comment
-        return True, 'The code generated is correct'
+                flag, comment = self.analyze_for(property)
+                results[property] = (flag, comment)
+                # if not flag:
+                #     return flag, comment
+        # return True, 'The code generated is correct'
+        return results

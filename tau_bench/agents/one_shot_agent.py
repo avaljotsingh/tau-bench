@@ -38,6 +38,9 @@ class OneShotAgent(Agent):
             {"role": "user", "content": obs},
         ]
 
+        # print(messages)
+        # ljkdhf
+
         res = completion(
             messages=messages,
             model=self.model,
