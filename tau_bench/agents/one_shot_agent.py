@@ -38,15 +38,12 @@ class OneShotAgent(Agent):
             {"role": "user", "content": obs},
         ]
 
-        # print(messages)
-        # ljkdhf
-
         res = completion(
             messages=messages,
             model=self.model,
             custom_llm_provider=self.provider,
             # tools=self.tools_info,
-            temperature=self.temperature,
+            # temperature=self.temperature,
         )
 
         messages.append(model_dump(res.choices[0].message))

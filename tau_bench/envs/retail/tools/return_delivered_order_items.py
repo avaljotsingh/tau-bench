@@ -39,6 +39,7 @@ class ReturnDeliveredOrderItems(Tool):
         order["return_items"] = sorted(item_ids)
         order["return_payment_method_id"] = payment_method_id
 
+        # return (order)
         return json.dumps(order)
 
     @staticmethod

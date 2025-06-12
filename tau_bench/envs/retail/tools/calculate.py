@@ -11,7 +11,8 @@ class Calculate(Tool):
             return "Error: invalid characters in expression"
         try:
             # Evaluate the mathematical expression safely
-            return str(round(float(eval(expression, {"__builtins__": None}, {})), 2))
+            return (round(float(eval(expression, {"__builtins__": None}, {})), 2))
+            # return str(round(float(eval(expression, {"__builtins__": None}, {})), 2))
         except Exception as e:
             return f"Error: {e}"
 

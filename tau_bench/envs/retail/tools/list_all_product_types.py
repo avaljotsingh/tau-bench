@@ -13,6 +13,7 @@ class ListAllProductTypes(Tool):
             product["name"]: product["product_id"] for product in products.values()
         }
         product_dict = dict(sorted(product_dict.items()))
+        # return (product_dict)
         return json.dumps(product_dict)
 
     @staticmethod

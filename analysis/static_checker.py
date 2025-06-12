@@ -8,6 +8,7 @@ from type_checker import TypeChecker
 from undefined_vars import UndefinedVariableAnalyzer
 
 class StaticChecker:
+    modifying_properties = ['remove_dead_code', 'add_hash']
     def __init__(self, code: Code):
         self.code = code
 
@@ -104,21 +105,28 @@ class StaticChecker:
             
         return True, None
     
-    def modify(self, flag):
-        if flag == 'remove_dead_code':
+    def modify_prop(self, property):
+        if property == 'remove_dead_code':
             analyzer = DeadCodeAnalyzer()
             self.code = analyzer.remove_dead_code(self.code)
+        
+        elif property == 'add_hash':
+            self.code = self.code.add_hash()
 
     def analyze(self, properties):
         results = {}
-        modifying_properties = ['remove_dead_code']
         for property in properties:
-            if property in modifying_properties:
-                self.modify(property)
-            else:
-                flag, comment = self.analyze_for(property)
-                results[property] = (flag, comment)
-                # if not flag:
-                #     return flag, comment
-        # return True, 'The code generated is correct'
+            flag, comment = self.analyze_for(property)
+            results[property] = (flag, comment)
         return results
+    
+    def modify(self, properties):
+        for property in properties:
+            self.modify_prop(property)
+        return self.code
+            # if property == 'remove_dead_code':
+            #     analyzer = DeadCodeAnalyzer()
+            #     self.code = analyzer.remove_dead_code(self.code)
+            
+            # elif property == 'add_hash':
+            #     self.code = self.code.add_hash()

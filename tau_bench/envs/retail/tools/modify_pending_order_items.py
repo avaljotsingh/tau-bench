@@ -83,6 +83,7 @@ class ModifyPendingOrderItems(Tool):
             ]
         order["status"] = "pending (item modified)"
 
+        # return (order)
         return json.dumps(order)
 
     @staticmethod

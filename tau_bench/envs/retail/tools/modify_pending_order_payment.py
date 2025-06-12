@@ -81,6 +81,7 @@ class ModifyPendingOrderPayment(Tool):
             old_payment_method["balance"] += amount
             old_payment_method["balance"] = round(old_payment_method["balance"], 2)
 
+        # return (order)
         return json.dumps(order)
 
     @staticmethod

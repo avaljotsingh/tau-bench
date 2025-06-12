@@ -21,6 +21,7 @@ class Task:
         self.task = task
         self.ground_truth_plan = self.get_ground_truth_plan()
         self.generated_plan = self.get_generated_plan()
+        self.get_generated_plan_with_post = self.get_generated_plan_with_post()
         self.intent = self.get_intent()
 
     def get_ground_truth_plan(self):
@@ -38,6 +39,9 @@ class Task:
     def get_generated_plan(self):
         return Code(self.task['traj'][2]['content'])
     
+    def get_generated_plan_with_post(self):
+        return Code(self.task['traj'][3]['content'])
+    
     def get_intent(self):
         return self.task['traj'][1]['content']
 
@@ -45,12 +49,18 @@ class Task:
         return Plan.exec_plan(self.ground_truth_plan)
 
     def execute_generated_plan(self):
-        return Plan.exec_plan(self.generated_plan)
+        plan = self.generated_plan
+        return Plan.exec_plan(plan)
     
     def check_static(self, flags=['syntax', 'check_dead_code', 'undefined_vars', 'type_check']):
         plan = self.generated_plan
         static_checker = StaticChecker(plan)
         return static_checker.analyze(flags)
+    
+    def modify_static(self, flags=['add_hash']):
+        plan = self.generated_plan
+        static_checker = StaticChecker(plan)
+        return static_checker.modify(flags)
 
     def dead_code_check(self):
         plan = self.generated_plan
@@ -64,29 +74,53 @@ class Task:
         diff = DeepDiff(final_ground_truth_data, final_generated_data, verbose_level=2)
         return diff
     
+    def update_plan(self, plan):
+        self.generated_plan = plan
+    
 class Data:
     def __init__(self, filename):
         self.data = json.load(open(file_path))
+        self.tasks = [self.get_task(i) for i in range(len(self.data))]
+
 
     def get_task(self, i):
         return Task(self.data[i])
 
     def analyze_codes_dynamic(self):
         diffs = {}
-        for i in range(len(self.data)):
-            diffs[i] = self.get_task(i).check_correctness()
+        for i, task in enumerate(self.tasks):
+            diffs[i] = task.check_correctness()
         return diffs
 
     def analyze_codes_static(self):
         results = {}
-        for i in range(len(self.data)):
-            task = self.get_task(i)
+        for i, task in enumerate(self.tasks):
             results[i] = task.check_static()
         return results
     
-    def print_plan(self, i):
+    def modify_codes_static(self):
+        for i, task in enumerate(self.tasks):
+            new_plan = task.modify_static()
+            # print(task.generated_plan)
+            task.update_plan(new_plan)
+            # print(task.generated_plan)
+            # kdug
+    
+    def print_generated_plan(self, i, line_numbers=False):
         task = self.get_task(i)
         plan = task.generated_plan
+        plan.remove_imports()
+        plan.pretty_print(line_numbers)
+
+    def print_generated_plan_with_post(self, i, line_numbers=False):
+        task = self.get_task(i)
+        plan = task.generated_plan_with_post
+        plan.remove_imports()
+        plan.pretty_print(line_numbers)
+
+    def print_ground_truth_plan(self, i):
+        task = self.get_task(i)
+        plan = task.ground_truth_plan
         plan.pretty_print(False)
 
 
@@ -115,7 +149,13 @@ def print_results(results):
     print(tabulate(table, headers="keys", tablefmt="grid"))
 
 
-file_path = 'one-shot-gpt-4o-0.0_range_0--1_user-gpt-4o-one-shot_0609102847.json'
+file_path = 'one-shot-none-0.1_range_0--1_user-none-one-shot_0610114914.json'
 data = Data(file_path)
-results = data.analyze_codes_static()
-print_results(results)
+# results = data.analyze_codes_static()
+# print_results(results)
+# data.modify_codes_static()
+# data.print_generated_plan(0)
+data.print_generated_plan_with_post(0)
+data.analyze_codes_dynamic()
+# data.print_generated_plan(0)
+# data.print_ground_truth_plan(0)

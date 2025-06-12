@@ -70,6 +70,7 @@ class ExchangeDeliveredOrderItems(Tool):
         order["exchange_payment_method_id"] = payment_method_id
         order["exchange_price_difference"] = diff_price
 
+        # return (order)
         return json.dumps(order)
 
     @staticmethod

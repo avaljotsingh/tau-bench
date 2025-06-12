@@ -15,41 +15,46 @@ from tau_bench.envs.retail.tools.return_delivered_order_items import return_deli
 from tau_bench.envs.retail.tools.think import think
 from tau_bench.envs.retail.tools.transfer_to_human_agents import transfer_to_human_agents
 from tau_bench.envs.retail.tools.get_input_from_user import get_input_from_user
-user_id = find_user_id_by_name_zip(name="Mei Kovacs", zip_code="28236")
-orders = get_order_details(user_id=user_id)
-water_bottle_order = None
-desk_lamp_order = None
-for order in orders:
-    for item in order['items']:
-        if "water bottle" in item['product_name'].lower():
-            water_bottle_order = {"order_id": order['order_id'], "item_id": item['item_id']}
-        if "desk lamp" in item['product_name'].lower():
-            desk_lamp_order = {"order_id": order['order_id'], "item_id": item['item_id']}
-    if water_bottle_order and desk_lamp_order:
-        break
-if not water_bottle_order or not desk_lamp_order:
-    transfer_to_human_agents(reason="Could not locate one or both items in the user's orders.")
-desk_lamp_details = get_product_details(product_name="desk lamp")
-suitable_lamps = []
-for lamp in desk_lamp_details:
-    if "less bright" in lamp['description'].lower():
-        if "battery-powered" in lamp['power_source'].lower():
-            suitable_lamps.append(lamp)
-        elif "usb" in lamp['power_source'].lower():
-            suitable_lamps.append(lamp)
-        elif "ac" in lamp['power_source'].lower():
-            suitable_lamps.append(lamp)
-if not suitable_lamps:
-    transfer_to_human_agents(reason="Could not find a suitable replacement for the desk lamp.")
-replacement_lamp = suitable_lamps[0]  # Choose the first suitable lamp as default
-get_input_from_user(prompt=f"Do you want to exchange the desk lamp for {replacement_lamp['product_name']}?")
-if user_input == "yes":
-    exchange_delivered_order_items(
-        user_id=user_id,
-        exchanges=[
-            {"order_id": water_bottle_order['order_id'], "item_id": water_bottle_order['item_id'], "replacement": "bigger size"},
-            {"order_id": desk_lamp_order['order_id'], "item_id": desk_lamp_order['item_id'], "replacement": replacement_lamp['product_id']}
-        ]
-    )
-else:
-    transfer_to_human_agents(reason="User did not confirm the replacement for the desk lamp.")
+# Step 1: Locate the user ID using the provided name and ZIP code
+user_id = find_user_id_by_name_zip(first_name="Yusuf", last_name="Rossi", zip="19122")
+# Step 2: Retrieve the order details to identify the item IDs for the mechanical keyboard and smart thermostat
+order_details = get_order_details(order_id="W2378156")
+# Extract item IDs for the mechanical keyboard and smart thermostat
+keyboard_item_id = None
+thermostat_item_id = None
+for item in order_details['items']:
+    if "keyboard" in item['name'].lower():
+        keyboard_item_id = item['item_id']
+    elif "thermostat" in item['name'].lower():
+        thermostat_item_id = item['item_id']
+# Step 3: Search for replacement products
+# Find a suitable mechanical keyboard
+product_types = list_all_product_types()
+keyboard_product_id = None
+for product_type in product_types:
+    if "keyboard" in product_type['name'].lower():
+        product_details = get_product_details(product_id=product_type['product_id'])
+        if ("clicky switches" in product_details['features'].lower() and
+            "full-size" in product_details['features'].lower()):
+            if "rgb backlight" in product_details['features'].lower():
+                keyboard_product_id = product_details['product_id']
+                break
+            elif keyboard_product_id is None:  # Fallback to non-RGB if RGB is unavailable
+                keyboard_product_id = product_details['product_id']
+# Find a suitable smart thermostat
+thermostat_product_id = None
+for product_type in product_types:
+    if "thermostat" in product_type['name'].lower():
+        product_details = get_product_details(product_id=product_type['product_id'])
+        if "google home" in product_details['features'].lower():
+            thermostat_product_id = product_details['product_id']
+            break
+# Step 4: Exchange the items
+# Payment method ID is assumed to be the same as the original order's payment method
+payment_method_id = order_details['payment_method_id']
+exchange_delivered_order_items(
+    order_id="W2378156",
+    item_ids=[keyboard_item_id, thermostat_item_id],
+    new_item_ids=[keyboard_product_id, thermostat_product_id],
+    payment_method_id=payment_method_id
+)

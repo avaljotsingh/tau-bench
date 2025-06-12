@@ -10,6 +10,7 @@ class GetProductDetails(Tool):
     def invoke(data: Dict[str, Any], product_id: str) -> str:
         products = data["products"]
         if product_id in products:
+            # return (products[product_id])
             return json.dumps(products[product_id])
         return "Error: product not found"
 

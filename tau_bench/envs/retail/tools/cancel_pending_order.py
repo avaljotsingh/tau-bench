@@ -42,6 +42,7 @@ class CancelPendingOrder(Tool):
         order["cancel_reason"] = reason
         order["payment_history"].extend(refunds)
 
+        # return (order)
         return json.dumps(order)
 
     @staticmethod

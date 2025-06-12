@@ -10,6 +10,7 @@ class GetUserDetails(Tool):
     def invoke(data: Dict[str, Any], user_id: str) -> str:
         users = data["users"]
         if user_id in users:
+            # return (users[user_id])
             return json.dumps(users[user_id])
         return "Error: user not found"
 

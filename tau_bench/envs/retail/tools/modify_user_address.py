@@ -29,6 +29,7 @@ class ModifyUserAddress(Tool):
             "country": country,
             "zip": zip,
         }
+        # return (user)
         return json.dumps(user)
 
     @staticmethod

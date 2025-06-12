@@ -40,12 +40,12 @@ def parse_args() -> RunConfig:
         "--agent-strategy",
         type=str,
         default="tool-calling",
-        choices=["tool-calling", "act", "react", "few-shot", "one-shot"],
+        choices=["tool-calling", "act", "react", "few-shot", "one-shot", "assertions-agent"],
     )
     parser.add_argument(
         "--temperature",
         type=float,
-        default=0.0,
+        default=0.1,
         help="The sampling temperature for the action model",
     )
     parser.add_argument(
@@ -70,7 +70,6 @@ def parse_args() -> RunConfig:
     parser.add_argument("--user-strategy", type=str, default="llm", choices=[item.value for item in UserStrategy])
     parser.add_argument("--few-shot-displays-path", type=str, help="Path to a jsonlines file containing few shot displays")
     args = parser.parse_args()
-    print(args)
     return RunConfig(
         model_provider=args.model_provider,
         user_model_provider=args.user_model_provider,
