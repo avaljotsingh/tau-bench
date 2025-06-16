@@ -40,11 +40,14 @@ class Time():
         return self.total_time
     
 def print_times():
-    times = [("LLM", llm_time.get_time()), ("Env Step", env_step_time.get_time())]
+    times = [("LLM", llm_time.get_time()), ("Env Step", env_time.get_time()), ("Action Agent", action_agent_time.get_time()), ("Precondition Agent", precondition_agent_time.get_time()), ("Postcondition Agent", postcondition_agent_time.get_time())]
     print(tabulate.tabulate(times, headers=["Source", "Time"]))
     print('Context lengths', contextLength.length)
 
 
 llm_time = Time()
-env_step_time = Time()
+env_time = Time()
+action_agent_time = Time()
+precondition_agent_time = Time()
+postcondition_agent_time = Time()
 contextLength = ContextLength()

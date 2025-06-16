@@ -1,10 +1,14 @@
 import os
+import openai ###
+import azure.identity ###
 
 from tau_bench.model_utils.api.datapoint import Datapoint
 from tau_bench.model_utils.model.chat import ChatModel, Message
 from tau_bench.model_utils.model.completion import approx_cost_for_datapoint, approx_prompt_str
 from tau_bench.model_utils.model.general_model import wrap_temperature
 from tau_bench.model_utils.model.utils import approx_num_tokens
+from azure.ai.inference import ChatCompletionsClient
+from azure.identity import DefaultAzureCredential, ChainedTokenCredential, AzureCliCredential
 
 DEFAULT_OPENAI_MODEL = "gpt-4o-2024-08-06"
 API_KEY_ENV_VAR = "OPENAI_API_KEY"
@@ -75,13 +79,47 @@ class OpenAIModel(ChatModel):
         else:
             self.model = model
 
-        api_key = None
-        if api_key is None:
-            api_key = os.getenv(API_KEY_ENV_VAR)
-            if api_key is None:
-                raise ValueError(f"{API_KEY_ENV_VAR} environment variable is not set")
-        self.client = OpenAI(api_key=api_key)
-        self.async_client = AsyncOpenAI(api_key=api_key)
+        #if api_key is None:
+        #    api_key = os.getenv(API_KEY_ENV_VAR)
+        #    if api_key is None:
+        #        raise ValueError(f"{API_KEY_ENV_VAR} environment variable is not set")
+        #self.client = OpenAI(api_key=api_key)
+        credential = ChainedTokenCredential(
+        AzureCliCredential(),
+        DefaultAzureCredential(
+        exclude_cli_credential=True,
+        # Exclude other credentials we are not interested in.
+        exclude_environment_credential=True,
+        exclude_shared_token_cache_credential=True,
+        exclude_developer_cli_credential=True,
+        exclude_powershell_credential=True,
+        exclude_interactive_browser_credential=True,
+        exclude_visual_studio_code_credentials=True,
+        # DEFAULT_IDENTITY_CLIENT_ID is a variable exposed in
+        # Azure ML Compute jobs that has the client id of the
+        # user-assigned managed identity in it.
+        # See https://learn.microsoft.com/en-us/azure/machine-learning/how-to-identity-based-service-authentication#compute-cluster
+        # In case it is not set the ManagedIdentityCredential will
+        # default to using the system-assigned managed identity, if any.
+        managed_identity_client_id=os.environ.get("DEFAULT_IDENTITY_CLIENT_ID"),
+        )
+    )
+        scopes = ["api://trapi/.default"]
+
+    # Note: Check out the other model deployments here - https://dev.azure.com/msresearch/TRAPI/_wiki/wikis/TRAPI.wiki/15124/Deployment-Model-Information
+        api_version = '2025-03-01-preview'  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
+        deployment_name = "gpt-4o_2024-11-20" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
+        instance = "redmond/interactive/openai" #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
+        endpoint = f'https://trapi.research.microsoft.com/{instance}/deployments/'+deployment_name
+
+        self.client = ChatCompletionsClient(
+        endpoint=endpoint,
+        credential=credential,
+        credential_scopes=scopes,
+        api_version=api_version
+        )
+        #azure_ad_token_provider=azure.identity.get_bearer_token_provider(azure.identity.AzureCliCredential(), "https://cognitiveservices.azure.com/.default"))
+        #self.async_client = AsyncOpenAI(api_key=api_key)
         self.temperature = temperature
 
     def generate_message(
@@ -93,11 +131,11 @@ class OpenAIModel(ChatModel):
         if temperature is None:
             temperature = self.temperature
         msgs = self.build_generate_message_state(messages)
-        res = self.client.chat.completions.create(
+        res = self.client.complete(
             model=self.model,
             messages=msgs,
             temperature=wrap_temperature(temperature),
-            response_format={"type": "json_object" if force_json else "text"},
+            #response_format={"type": "json_object" if force_json else "text"},
         )
         return self.handle_generate_message_response(
             prompt=msgs, content=res.choices[0].message.content, force_json=force_json
@@ -121,3 +159,4 @@ class OpenAIModel(ChatModel):
         return approx_num_tokens(prompt) <= MAX_CONTEXT_LENGTH_MAP.get(
             self.model, MAX_CONTEXT_LENGTH_FALLBACK
         )
+ 
