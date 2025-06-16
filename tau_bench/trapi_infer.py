@@ -7,6 +7,9 @@ from pydantic import RootModel
 from typing import Any, Dict, List, Union
 import json
 
+import time
+from tau_bench.globals import *
+
 credential = ChainedTokenCredential(
     AzureCliCredential(),
     DefaultAzureCredential(
@@ -29,22 +32,22 @@ credential = ChainedTokenCredential(
 )
 scopes = ["api://trapi/.default"]
 
-# # Note: Check out the other model deployments here - https://dev.azure.com/msresearch/TRAPI/_wiki/wikis/TRAPI.wiki/15124/Deployment-Model-Information
-# api_version = '2025-03-01-preview'  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
-# model_name = 'o3'  # Ensure this is a valid model name
-# model_version = '2025-04-16'  # Ensure this is a valid model version
-# deployment_name = "o3_2025-04-16" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
-# instance = "redmond/interactive/openai" #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
-# endpoint = f'https://trapi.research.microsoft.com/{instance}/deployments/'+deployment_name
-
-
 # Note: Check out the other model deployments here - https://dev.azure.com/msresearch/TRAPI/_wiki/wikis/TRAPI.wiki/15124/Deployment-Model-Information
 api_version = '2025-03-01-preview'  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
-model_name = 'gpt-4o'  # Ensure this is a valid model name
-model_version = '2024-11-20'  # Ensure this is a valid model version
-deployment_name = "gpt-4o_2024-11-20" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
+model_name = 'o3'  # Ensure this is a valid model name
+model_version = '2025-04-16'  # Ensure this is a valid model version
+deployment_name = "o3_2025-04-16" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
 instance = "redmond/interactive/openai" #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
 endpoint = f'https://trapi.research.microsoft.com/{instance}/deployments/'+deployment_name
+
+
+# # Note: Check out the other model deployments here - https://dev.azure.com/msresearch/TRAPI/_wiki/wikis/TRAPI.wiki/15124/Deployment-Model-Information
+# api_version = '2025-03-01-preview'  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
+# model_name = 'gpt-4o'  # Ensure this is a valid model name
+# model_version = '2024-11-20'  # Ensure this is a valid model version
+# deployment_name = "gpt-4o_2024-11-20" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
+# instance = "redmond/interactive/openai" #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
+# endpoint = f'https://trapi.research.microsoft.com/{instance}/deployments/'+deployment_name
 
 client = ChatCompletionsClient(
     endpoint=endpoint,
@@ -94,23 +97,13 @@ def model_dump(x):
 
 
 def completion(*args, **kwargs):
-    # print('args')
-    # print(args)
-    # print('kwargs')
-    # print(kwargs)
-    # dlfh
     sig = inspect.signature(client.complete)
     allowed_params = sig.parameters
 
     filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_params}
-    # if 'temperature' in filtered_kwargs:
-    #     del filtered_kwargs["temperature"]
-    # print(filtered_kwargs.keys())
-    # ldjfk
+    contextLength.get_lengths_from_messages(filtered_kwargs['messages'])
+    start_time = time.time()
     res = client.complete(*args, **filtered_kwargs)
+    end_time = time.time()
+    llm_time.record_time(end_time - start_time)
     return res
-
-
-# redmond/interactive/openai	o4-mini_2025-04-16	o4-mini	2025-04-16	1000	60	Modern Auth
-# redmond/interactive/openai	o3_2025-04-16	o3	2025-04-16	1000	60	Modern Auth
-# redmond/interactive/openai	o1_2024-12-17	o1	2024-12-17	119	60	Modern Auth
