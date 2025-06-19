@@ -10,6 +10,8 @@ from tau_bench.envs.base import Env
 from tau_bench.types import SolveResult, Action, RESPOND_ACTION_NAME
 from termcolor import colored
 
+from tau_bench.globals import *
+
 class ToolCallingAgent(Agent):
     def __init__(
         self,
@@ -32,18 +34,13 @@ class ToolCallingAgent(Agent):
         env_reset_res = env.reset(task_index=task_index)
         obs = env_reset_res.observation
         info = env_reset_res.info.model_dump()
-        print(colored(f'Initial info is {info}', 'red'))
         reward = 0.0
         messages: List[Dict[str, Any]] = [
             {"role": "system", "content": self.wiki},
             {"role": "user", "content": obs},
         ]
-        print('Initial task')
-        print(obs)
-        print()
-        max_num_steps = 3
         for k in range(max_num_steps):
-            print(k)
+            start_time = time.time()
             res = completion(
                 messages=messages,
                 model=self.model,
@@ -52,15 +49,15 @@ class ToolCallingAgent(Agent):
                 temperature=self.temperature,
             )
             temp = res.choices[0].message
-            print(colored(f'Agent response is {temp}', 'red'))
             next_message = model_dump(temp)
             # next_message = res.choices[0].message
             # total_cost += res._hidden_params["response_cost"]
             total_cost += res.usage.total_tokens
             action = message_to_action(next_message)
-            print(colored(f'Action is {action}', 'magenta'))
+            action_agent_time.record_time(time.time() - start_time)
+            start_time = time.time()
             env_response = env.step(action)
-            print(colored(env_response, 'green'))
+            env_time.record_time(time.time() - start_time)
             reward = env_response.reward
             info = {**info, **env_response.info.model_dump()}
             if action.name != RESPOND_ACTION_NAME:
@@ -83,7 +80,6 @@ class ToolCallingAgent(Agent):
                         {"role": "user", "content": env_response.observation},
                     ]
                 )
-            # print(colored(f'Next set of messages is {messages}', 'cyan'))
             if env_response.done:
                 break
         return SolveResult(

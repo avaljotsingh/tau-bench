@@ -99,6 +99,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                     info=res.info,
                     traj=res.messages,
                     trial=i,
+                    records=res.records,
                 )
             except Exception as e:
                 result = EnvRunResult(
@@ -107,6 +108,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                     info={"error": str(e), "traceback": traceback.format_exc()},
                     traj=[],
                     trial=i,
+                    records={},
                 )
             print(
                 "✅" if result.reward == 1 else "❌",
@@ -114,13 +116,16 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                 result.info,
             )
             print("-----")
+            # print(result.records)
             with lock:
                 data = []
                 if os.path.exists(ckpt_path):
                     with open(ckpt_path, "r") as f:
                         data = json.load(f)
                 with open(ckpt_path, "w") as f:
-                    json.dump(data + [make_serializable(result.model_dump())], f, indent=2)
+                    temp = make_serializable(result.model_dump())
+                    # print(temp)
+                    json.dump(data + [temp], f, indent=2)
             return result
 
         # with ThreadPoolExecutor(max_workers=config.max_concurrency) as executor:

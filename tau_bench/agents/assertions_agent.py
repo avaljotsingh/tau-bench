@@ -5,6 +5,7 @@ import re
 from tau_bench.trapi_infer import completion, model_dump
 from typing import List, Optional, Dict, Any
 from enum import Enum, auto
+import shlex
 
 from tau_bench.agents.base import Agent
 from tau_bench.envs.base import Env
@@ -28,7 +29,7 @@ In your precondition code, you can only use the variables that are defined in th
 The latest action has not been executed yet. So, the corresponding variable is nto defined yet and the output is unknown. 
 Do not hallucinate the values of the variables.
 You also need to check that in the new proposed function call, are the arguments are correct and are of the correct type?
-You do not need to check the existence of the function.
+You do not need to check the existence of the function or if it is callable. We will make sure before execution that it is callable.
 You don't need to add any print statement. 
 Raise an exception for each error so that I can run the code and catch all the exceptions.
 '''
@@ -55,19 +56,16 @@ Output only true of false.
 '''
 
 
-
-
-
-class Role(Enum):
-    USER = auto()
-    ENV = auto()
-    ACTION_AGENT = auto()
-    TOOL_CALL = auto()
-    TOOL_OUTPUT = auto()
-    PRECONDITION_AGENT = auto()
-    PRECONDITION_OUTPUT = auto()
-    POSTCONDITION_AGENT = auto()
-    POSTCONDITION_OUTPUT = auto()
+class Role(str, Enum):
+    USER = "USER"
+    ENV = "ENV"
+    ACTION_AGENT = "ACTION_AGENT"
+    TOOL_CALL = "TOOL_CALL"
+    TOOL_OUTPUT = "TOOL_OUTPUT"
+    PRECONDITION_AGENT = "PRECONDITION_AGENT"
+    PRECONDITION_OUTPUT = "PRECONDITION_OUTPUT"
+    POSTCONDITION_AGENT = "POSTCONDITION_AGENT"
+    POSTCONDITION_OUTPUT = "POSTCONDITION_OUTPUT"
     
 
 def print_message(role, message):
@@ -92,7 +90,68 @@ def print_message(role, message):
     else:
         print(role)
         raise f'Role: {role} not defined'
+
+
+def fix_quoted_lists(code_str):
+    """
+    Fixes broken single-quoted strings that look like lists, e.g.,
+    item_ids='['123']' → item_ids="['123']"
+    """
+    # Replace ='<[...']' with ="[..."]"
+    return re.sub(r"=\s*'(\[.*?\])'", r'="\1"', code_str)
+
+def extract_function_call_components(code_str):
+    print(code_str)
+    if 'think' in code_str:
+        return 'think', {'thought': code_str.split('=')[2][:-1]}
+    """
+    Extract the function name and keyword arguments from an assignment
+    like 'var_1 = func(a=..., b=...)', even if argument values contain
+    commas, quotes, or stringified lists.
     
+    Returns: (func_name: str, kwargs: dict)
+    Raises: ValueError on malformed input
+    """
+    try:
+        # Clean and fix common malformed input
+        code_str = code_str.strip()
+        code_str = fix_quoted_lists(code_str)
+
+        # Extract RHS (right-hand side): everything after the first '='
+        if '=' not in code_str:
+            raise ValueError("No '=' found in the input")
+
+        rhs = code_str.split('=', 1)[1].strip()
+
+        # Parse the RHS as a function call
+        tree = ast.parse(rhs, mode='eval')
+        if not isinstance(tree.body, ast.Call):
+            raise ValueError("Expected a function call on the right-hand side")
+
+        func_call = tree.body
+        func_name = (
+            func_call.func.id if isinstance(func_call.func, ast.Name)
+            else ast.unparse(func_call.func) if hasattr(ast, 'unparse')
+            else '<unknown_function>'
+        )
+
+        kwargs = {}
+        for kw in func_call.keywords:
+            try:
+                # Safely evaluate constants
+                value = ast.literal_eval(kw.value)
+            except Exception:
+                # Fallback: try to get the source text
+                value = ast.unparse(kw.value) if hasattr(ast, 'unparse') else str(kw.value)
+            kwargs[kw.arg] = value
+
+        return func_name, kwargs
+
+    except SyntaxError as e:
+        raise ValueError(f"Syntax error while parsing: {e}")
+    except Exception as e:
+        raise ValueError(f"Failed to extract function call components: {e}")
+
 class Records():
     def __init__(self):
         self.conversation = []
@@ -107,6 +166,49 @@ class Records():
         self.postconditions_outputs = []
         self.var_counter = 0
 
+    def get_records(self):
+        return {
+            'conversation': [self.conversation],
+            'user_messages': self.user_messages,
+            'env_messages': self.env_messages,
+            'action_agent_messages': self.action_agent_messages,
+            'plan': self.plan,
+            'plan_outputs': self.plan_outputs,
+            'preconditions': self.preconditions,
+            'preconditions_outputs': self.preconditions_outputs,
+            'postconditions': self.postconditions,
+            'postconditions_outputs': self.postconditions_outputs,
+        }
+
+
+
+    def get_messages(self):
+        messages = []
+        func_name, kwargs = None, None
+        for i in range(len(self.conversation)):
+            role = self.conversation[i]['role']
+            index = self.conversation[i]['index']
+            if role == Role.USER:
+                messages.append({"role": "user", "content": self.user_messages[index]})
+            elif role == Role.ENV:
+                messages.append({"role": "tool", "content": f'# {self.env_messages[index]}'})
+            elif role == Role.ACTION_AGENT:
+                messages.append({"role": "assistant", "content": self.action_agent_messages[index]})
+            elif role == Role.TOOL_CALL:
+                func_name, kwargs = extract_function_call_components(self.plan[index])
+                messages.append({"role": "assistant", "tool_calls": [{"type": "function", "function": {"name": func_name, "arguments": str(kwargs)}}]})
+            elif role == Role.TOOL_OUTPUT:
+                messages.append({"role": "tool", "name": func_name, "content": self.plan_outputs[index].split('=')[1].strip()})
+            # elif role == Role.PRECONDITION_AGENT:
+            #     messages.append({"role": "precondition agent", "content": self.preconditions[index]})
+            # elif role == Role.PRECONDITION_OUTPUT:
+            #     messages.append({"role": "env", "content": self.preconditions_outputs[index]})
+            # elif role == Role.POSTCONDITION_AGENT:
+            #     messages.append({"role": "postcondition agent", "content": self.postconditions[index]})
+            # elif role == Role.POSTCONDITION_OUTPUT:
+            #     messages.append({"role": "env", "content": self.postconditions_outputs[index]})
+        return messages
+
 class ActionAgent():
     def __init__(self, tools_info, wiki, env):
         self.tools_info = tools_info
@@ -117,7 +219,7 @@ class ActionAgent():
         res = completion(messages=messages, tools=self.tools_info)
         return res.choices[0].message
     
-    def get_context(self, records: Records):
+    def get_context(self, records: Records, precondition_results, current_postconditions):
         context = [{"role": "system", "content": self.wiki}]
         for i in range(len(records.conversation)):
             role = records.conversation[i]["role"]
@@ -134,11 +236,14 @@ class ActionAgent():
                 context.append({"role": "assistant", "content": f'# {records.plan_outputs[index]}'})
             else:
                 raise Exception(f'Role: {role} not defined')
+        context.append({'role': 'user', 'content': f'Based on our conversation, I have summarised the following pending tasks: {current_postconditions}'})
+        if len(precondition_results) > 0:
+            context.append({'role': 'user', 'content': f'Based on our conversation, I also have the following preconditions that failed: {precondition_results}'})
         return context
     
-    def generate_next_action(self, records):
+    def generate_next_action(self, records, precondition_results, current_postconditions):
         start_time = time.time()
-        context = self.get_context(records)
+        context = self.get_context(records, precondition_results, current_postconditions)
         action_message = self.generate_next_action_message(context)
         action = self.message_to_action(action_message)
         action_agent_time.record_time(time.time() - start_time)
@@ -159,7 +264,7 @@ class ActionAgent():
         start_time = time.time()
         env_response = env.step(action)
         env_time.record_time(time.time() - start_time)
-        return env_response.done, env_response.observation, env_response.reward, env_response.info
+        return env_response.done, str(env_response.observation), env_response.reward, env_response.info
 
 class PreconditionAgent():
     def __init__(self, tools_info):
@@ -181,6 +286,8 @@ class PreconditionAgent():
                 user_message += f"Action taken: \n```python \n{records.plan[index]}\n"
             elif role == Role.TOOL_OUTPUT:
                 user_message += f"Action output: \n# {records.plan_outputs[index]}\n```\n"
+            elif role == Role.PRECONDITION_AGENT:
+                user_message += f"Precondition checked before: {records.preconditions[index]}\n"
             else:
                 raise Exception(f'Role: {role} not defined')
         user_message += f"python code for the new action: \n```python\nvar_{records.var_counter} = {action.name}({(str(action.kwargs))[1:-1]})\n```\n"
@@ -273,9 +380,9 @@ class PostconditionAgent():
                 matching_lines.append(cleaned_line)
         return matching_lines
     
-    def get_message_from_records(self, records):
+    def get_message_from_records(self, start, records):
         message = ''
-        for i in range(self.conversation_index, len(records.conversation)):
+        for i in range(start, len(records.conversation)):
             role = records.conversation[i]['role']
             index = records.conversation[i]['index']
             if role == Role.USER:
@@ -300,25 +407,32 @@ class PostconditionAgent():
         context = self.get_context_for_generation(current_postconditions, message)
         res = completion(messages=context, tools=self.tools_info)
         new_post_condition_message = res.choices[0].message['content']
-        new_post_conditions = self.parse_postcondition(new_post_condition_message)
+        if new_post_condition_message is None or (isinstance(new_post_condition_message, list) and len(new_post_condition_message) == 0):
+            new_post_conditions = []
+        else:
+            new_post_conditions = self.parse_postcondition(new_post_condition_message)
         return new_post_conditions
     
     def check_postcondition(self, current_postconditions, message):
         tasks_solved = []
+        task_solved_messages = []
         for task in current_postconditions:
             task_user_message = message + f"\n task: {task}\n"
             messages = [{"role": "system", "content": POSTCONDITION_CHECK_SYSTEM_PROMPT}, {"role": "user", "content": task_user_message}]
             res = completion(messages=messages)
             check_passed = res.choices[0].message['content']
             tasks_solved.append('true' in check_passed or 'True' in check_passed)
+            task_solved_messages.append(check_passed)
+        print(task_solved_messages)
         return tasks_solved
     
     def register_conversation(self, current_postconditions, records):
         start_time = time.time()
-        message = self.get_message_from_records(records)
+        message1 = self.get_message_from_records(self.conversation_index, records)
+        new_postconditions = self.generate_new_postcondition(current_postconditions, message1)
+        message2 = self.get_message_from_records(0, records)
+        tasks_solved = self.check_postcondition(current_postconditions, message2)
         self.conversation_index = len(records.conversation)
-        tasks_solved = self.check_postcondition(current_postconditions, message)
-        new_postconditions = self.generate_new_postcondition(current_postconditions, message)
         pending_postconditions = []
         for i in range(len(tasks_solved)):
             if not tasks_solved[i]:
@@ -389,13 +503,14 @@ class AssertionsAgent(Agent):
                 self.register_message(Role.TOOL_OUTPUT, observation)
         
 
-    def solve(self, env: Env, task_index: Optional[int] = None, max_actions: int = 30, max_refinements: int = 1) -> SolveResult:
+    def solve(self, env: Env, task_index: Optional[int] = None, max_actions: int = 30, max_refinements: int = 2) -> SolveResult:
         self.records = Records()
         self.action_agent = ActionAgent(tools_info=self.tools_info, wiki=self.wiki, env=env)
         self.precondition_agent = PreconditionAgent(tools_info=self.tools_info)
         self.postcondition_agent = PostconditionAgent(tools_info=self.tools_info)
         env_reset_res = env.reset(task_index=task_index)
         obs = env_reset_res.observation
+        info = env_reset_res.info.model_dump()
         self.register_message(Role.USER, obs)
         self.postconditions = []
         
@@ -403,36 +518,38 @@ class AssertionsAgent(Agent):
         done = False
         action_iteration = 0
         while not done and action_iteration < max_actions:
-            print(action_iteration)
-            print_times()
             action_iteration += 1
-            action = self.action_agent.generate_next_action(self.records)
-            if action.name == RESPOND_ACTION_NAME:
-                action_role = Role.ACTION_AGENT 
-                precondition_passed = True
-            else:
-                action_role = Role.TOOL_CALL 
-                precondition_passed = False
-            refinement_index = 0
-            while not precondition_passed and refinement_index < max_refinements:
-                refinement_index += 1
-                precondition = self.precondition_agent.generate_precondition(self.records, action)
-                self.register_message(Role.PRECONDITION_AGENT, precondition)
-                precondition_passed = self.precondition_agent.execute_precondition(precondition, self.records)
-                self.register_message(Role.PRECONDITION_OUTPUT, precondition_passed)
+            precondition_passed = False
+            precondition_results = []
+            refinement_iteration = 0
+            while not precondition_passed and refinement_iteration < max_refinements:
+                refinement_iteration += 1
+                print(f'Task Index: {task_index}, Action Iteration: {action_iteration}, Refinement Iteration: {refinement_iteration}')
+                # print(action_iteration, refinement_iteration)
+                print_times()
+                action = self.action_agent.generate_next_action(self.records, precondition_results, self.postconditions)
+                if action.name == RESPOND_ACTION_NAME:
+                    action_role = Role.ACTION_AGENT 
+                    precondition_passed = True
+                else:
+                    action_role = Role.TOOL_CALL 
+                    precondition_passed = False
+                    precondition = self.precondition_agent.generate_precondition(self.records, action)
+                    self.register_message(Role.PRECONDITION_AGENT, precondition)
+                    precondition_results = self.precondition_agent.execute_precondition(precondition, self.records)
+                    precondition_passed = len(precondition_results) == 0
+                    self.register_message(Role.PRECONDITION_OUTPUT, precondition_passed)
             self.register_message(action_role, action)
-            done, observation, reward, info = self.action_agent.execute_action(action, env)
+            done, observation, reward, env_info = self.action_agent.execute_action(action, env)
+            # assert(reward < 1 or 'STOP' in observation)
+            # assert(reward > 0 or not 'STOP' in observation)
+            info = {**info, **env_info.model_dump()}
             self.register_output_from_action(action, observation)
             old_postconditions, new_postconditions = self.postcondition_agent.register_conversation(self.postconditions, self.records)
             self.register_message(Role.POSTCONDITION_AGENT, old_postconditions)
             self.register_message(Role.POSTCONDITION_AGENT, new_postconditions)
             self.postconditions = old_postconditions + new_postconditions
         
-        
-        return SolveResult(
-            observation=observation,
-            reward=reward,
-            done=done,
-            info=info,
-            records=self.records,
-        )
+        messages = self.records.get_messages()
+        return SolveResult(reward=reward, total_cost=0.0, info=info, messages=messages, records=self.records.get_records())
+    

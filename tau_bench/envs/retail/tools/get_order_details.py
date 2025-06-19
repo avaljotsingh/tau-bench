@@ -20,7 +20,7 @@ class GetOrderDetails(Tool):
             "type": "function",
             "function": {
                 "name": "get_order_details",
-                "description": "Get the status and details of an order. The output is a dictonary with the fields: 'order_id', 'user_id', 'address', 'items', 'fulfillments', 'status', 'payment_history'. Items is a list of dicts with keys: name, product_id, item_id, price, options. Options is further a dictionary with details. If the order is not found, the output is a string saying that the order isn't found",
+                "description": "Get the status and details of an order.",
                 "parameters": {
                     "type": "object",
                     "properties": {

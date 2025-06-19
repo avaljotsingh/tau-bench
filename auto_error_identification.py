@@ -84,7 +84,10 @@ def display_traj(traj: List[Dict[str, Any]]) -> str:
     if len(traj) == 0:
         raise ValueError("Trajectory is empty")
     stripped_traj = [item for item in traj if item["role"] != "system"]
-    return "\n".join([f"{item['role'].capitalize()}: {item['content']}" for item in stripped_traj])
+    return "\n".join([
+        f"{item['role'].capitalize()}: {item.get('content', 'None')}"
+        for item in stripped_traj
+    ])
 
 def display_actions(actions: List[Action]) -> str:
     return json.dumps([action.model_dump() for action in actions], indent=4)
@@ -174,11 +177,17 @@ def fault_type_analysis(api: API, results: List[OriginalResult], max_concurrency
         results = list(executor.map(get_fault_type, task_ids, user_instructions, trajs, ground_truth_actions, ground_truth_outputs))
     return results
 
+def remove_error_trajs(results: List[OriginalResult]) -> List[OriginalResult]:
+    res = [r for r in results if len(r['traj']) > 0]
+    print(f'Found {len(results) - len(res)} error trajectories')
+    return res
+
 def main() -> None:
     args = get_args()
     api = default_api_from_args(args)
     with open(args.results_path, "r") as f:
         results = json.load(f)
+    results = remove_error_trajs(results)
     print(f"Loaded {len(results)} results")
     env = args.env
     if env == "airline":
@@ -189,6 +198,8 @@ def main() -> None:
         raise ValueError(f"Invalid environment: {env}")
     failed_results = [r for r in results if r["reward"] <= 1e-3]
     print(f"Found {len(failed_results)} failed trajectories")
+    if len(failed_results) == 0:
+        return
     if args.max_num_failed_results is not None and len(failed_results) > args.max_num_failed_results:
         print(f"Limiting to {args.max_num_failed_results} failed trajectories")
         failed_results = failed_results[:args.max_num_failed_results]

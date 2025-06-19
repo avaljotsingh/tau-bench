@@ -40,6 +40,7 @@ class SolveResult(BaseModel):
     messages: List[Dict[str, Any]]
     info: Dict[str, Any]
     total_cost: Optional[float] = None
+    records: Dict[str, List[Any]] = None
 
 
 class EnvInfo(BaseModel):
@@ -67,6 +68,7 @@ class EnvRunResult(BaseModel):
     info: Dict[str, Any]
     traj: List[Dict[str, Any]]
     trial: int
+    records: Dict[str, List[Any]] = None
 
 
 class RunConfig(BaseModel):
