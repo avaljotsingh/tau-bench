@@ -44,13 +44,13 @@ class Order(BaseModel):
 
 class TaskType(str, Enum):
     ValidateUser = "validate_user"
-    FindUserByEmail = "find_user_by_email"
-    FindUserByZip = "find_user_by_zip"
+    FindUserByEmail = "find_user_id_by_email"
+    FindUserByZip = "find_user_id_by_name_zip"
     GetUserDetails = "get_user_details"
     GetProductDetails = "get_product_details"
     GetOrderDetails = "get_order_details"
-    GetUserInput = "get_user_input"
-    ListAllProducts = "list_all_products"
+    GetUserInput = "get_input_from_user"
+    ListAllProducts = "list_all_product_types"
     Calculate = "calculate"
     Think = "think"
     TransferToHumanAgent = "transfer_to_human_agent"
@@ -64,11 +64,11 @@ class TaskType(str, Enum):
 
 def get_func_from_tasktype(tasktype):
     if tasktype == TaskType.ValidateUser:
-        return ['find_user_by_email', 'find_user_by_zip']
+        return ['find_user_id_by_email', 'find_user_id_by_name_zip']
     elif tasktype == TaskType.FindUserByEmail:
-        return ['find_user_by_email']
+        return ['find_user_id_by_email']
     elif tasktype == TaskType.FindUserByZip:
-        return ['find_user_by_zip']
+        return ['find_user_id_by_name_zip']
     elif tasktype == TaskType.GetUserDetails:
         return ['get_user_details']
     elif tasktype == TaskType.GetProductDetails:
@@ -76,13 +76,29 @@ def get_func_from_tasktype(tasktype):
     elif tasktype == TaskType.GetOrderDetails:
         return ['get_order_details']
     elif tasktype == TaskType.GetUserInput:
-        return ['get_user_input']
+        return ['get_input_from_user']
     elif tasktype == TaskType.ListAllProducts:
-        return ['list_all_products']
+        return ['list_all_product_types']
     elif tasktype == TaskType.Calculate:
         return ['calculate']
     elif tasktype == TaskType.Think:
         return ['think']
+    elif tasktype == TaskType.TransferToHumanAgent:
+        return ['transfer_to_human_agent']
+    elif tasktype == TaskType.CancelPendingOrder:
+        return ['cancel_pending_order']
+    elif tasktype == TaskType.ModifyPendingOrderAddress:
+        return ['modify_pending_order_address']
+    elif tasktype == TaskType.ModifyPendingOrderItems:
+        return ['modify_pending_order_items']
+    elif tasktype == TaskType.ModifyPendingOrderPayment:
+        return ['modify_pending_order_payment']
+    elif tasktype == TaskType.ModifyUserAddress:
+        return ['modify_user_address']
+    elif tasktype == TaskType.ReturnDeliveredOrderItems:
+        return ['return_delivered_order_items']
+    elif tasktype == TaskType.ExchangeDeliveredOrderItems:
+        return ['exchange_delivered_order_items']
     else:
         print(tasktype)
         raise Exception("Unknown tasktype")
