@@ -8,12 +8,11 @@ from tau_bench.types import Action, RESPOND_ACTION_NAME
 from tau_bench.envs.base import Env
 from tau_bench.agents.state import *
 from tau_bench.agents.action_agent_with_task import ActionAgentWithTask 
-from tau_bench.agents.action_agent_with_task import ActionAgentWithoutTask 
 from tau_bench.agents.action_agent_with_task import TaskCreator
-from tau_bench.agents.precondition_agent import PreconditionAgent
-from tau_bench.agents.postcondition_agent import PostconditionAgent
 from tau_bench.agents.information_manager import InformationManager
 from tau_bench.agents.task_manager import TaskManager
+from tau_bench.agents.interaction_agent import InteractionAgent
+from tau_bench.agents.env_response_agent import EnvResponseAgent
 
 
 
@@ -158,39 +157,8 @@ class Orchestrator:
         print(colored(obs, 'blue'))
         print(colored('###########Finished Action###########', 'red'))
     
-    def interact_with_user(self, current_task, action_message):
-        print(colored('###########Starting Interaction###########', 'red'))
-        def extract_action(action_message):
-            _, json_part = action_message.split("###INTERACT_WITH_USER###", 1)
-            content = json.loads(json_part.strip())["content"]
-            action = Action(name=RESPOND_ACTION_NAME, kwargs={"content": content})
-            return action
-        action = extract_action(action_message)
-        print(colored(action.kwargs["content"], 'yellow'))
-        self.done, user_response, self.reward, info = self.execute_action(action, self.env)
-        print(colored(user_response, 'blue'))
-        messages = [{"role": "assistant", "content": action.kwargs["content"]}, {"role": "user", "content": user_response}]
-        SYSTEM_PROMPT = f"""
-You are a helpful customer support agent. We need some information from, a customer to complete a task.
-Can you communicate with the user to get the relevant information?
-Here is the task that needs to be completed: {current_task}.
-        """
-        fixed_context = [{"role": "system", "content": SYSTEM_PROMPT}]
-        while True:
-            end_interaction = self.end_interaction(messages)
-            if not 'continue' in end_interaction:
-                break
-            context = fixed_context + messages
-            agent_response = completion(messages=context).choices[0].message['content']
-            agent_response += 'Please give only the requested information.'
-            action = Action(name=RESPOND_ACTION_NAME, kwargs={"content": agent_response})
-            self.done, user_response, self.reward, info = self.execute_action(action, self.env)
-            messages.append({"role": "assistant", "content": agent_response})
-            messages.append({"role": "user", "content": user_response})
-            print(colored(agent_response, 'yellow'))
-            print(colored(user_response, 'blue'))
-        print(end_interaction)
-        print(colored('###########Interation Ended###########', 'red'))
+    def interact_with_user(self, current_task, action):
+        end_interaction, user_response = self.interaction_agent.interact_with_user_with_task(current_task, action)
         if 'store' in end_interaction:
             self.information_manager.update_information(user_response)
         elif 'create_task' in end_interaction:
@@ -200,27 +168,9 @@ Here is the task that needs to be completed: {current_task}.
             self.information_manager.update_information(user_response)
             action_message = self.task_creator.create_task(user_response)
             self.create_task(None, action_message)
-
-    def end_interaction(self, messages):
-        SYSTEM_PROMT = """
-You are a helpful message classifier. You will be provided a conversation between an agent and a customer.
-Based on the last message of the customer, you need to decide 
-whether the user has provided with some information that must be stored or a new task to create 
-or there is no material in the response whatsoever so the agent needs to continue the interaction.
-You will respond with one of the following:
-- "store": if the user has provided with some information that must be stored.
-- "continue": if the agent needs to continue the interaction.
-- "create_task": if the user has provided with a new task to create.
-- "both": if the user has provided with some information that must be stored and a new task to create.
-        """
-        message = ""
-        for i in range(len(messages)):
-            message += messages[i]["role"] + ": " + messages[i]["content"] + "\n"
-        context = [{"role": "system", "content": SYSTEM_PROMT}, {"role": "user", "content": message}]
-        response = completion(messages=context).choices[0].message['content']
-        print(colored('Checking message end', 'red'))
-        print(colored(response, 'yellow'))
-        return response
+        else:
+            print(end_interaction)
+            raise f'End interaction: {end_interaction} not recognized'
 
 
     def message_to_action(self, message: Dict[str, Any]) -> Action:
@@ -265,14 +215,53 @@ You will respond with one of the following:
             print(action_type)
             raise f'Action type: {action_type} not recognized'
         
+    def handle_task(self, task):
+        action_type, action = self.action_agent.generate_next_action(self.records, self.information_manager.information, task)
+        print(action_type, action)
+        if action_type == 'take_action':
+            self.register_message(Role.TOOL_CALL, action)
+            self.done, obs, self.reward, info = self.execute_action(action, self.env)
+            self.register_message(Role.TOOL_OUTPUT, obs)
+            env_response_interpretation = self.env_response_agent.check_response(task, action, obs)
+            print(colored(f'The env response interpretation is: {env_response_interpretation}', 'red'))
+
+            if 'task_not_solved' in env_response_interpretation:
+                return 
+            elif 'task_solved' in env_response_interpretation:
+                self.task_manager.remove_task(task)
+                return
+            elif 'save_information' in env_response_interpretation:
+                self.information_manager.update_information(obs)
+                return
+        elif action_type == 'create_task':
+            new_task = action
+            self.task_manager.add_task(new_task)
+            if task is not None:
+                self.task_manager.add_dependency(task, new_task)
+            else:
+                print('Check this')
+        elif action_type == 'interact_with_user':
+            self.interact_with_user(task, action)
+        else:
+            raise f'Action type: {action_type} not recognized'
+        
+    def handle_no_pending_task(self):
+        end_interaction_response, obs = self.interaction_agent.interact_with_user_no_task(self.records, self.information_manager.information)
+        print(end_interaction_response, obs)
+        assert(False)
+
+        
+        
     def solve(self, env: Env, task_index: Optional[int] = None, max_actions: int = 30, max_refinements: int = 2) -> SolveResult:
         self.records = Records()
         self.action_agent = ActionAgentWithTask(tools_info=self.tools_info, wiki=self.wiki, env=env)
-        self.action_agent_without_task = ActionAgentWithoutTask(tools_info=self.tools_info, wiki=self.wiki, env=env)
+        # self.action_agent_without_task = ActionAgentWithoutTask(tools_info=self.tools_info, wiki=self.wiki, env=env)
         self.task_manager = TaskManager(TaskGraph())
         self.task_manager.add_task(Task(TaskType.ValidateUser))
         self.information_manager = InformationManager({})
         self.task_creator = TaskCreator()
+        self.interaction_agent = InteractionAgent(wiki=self.wiki, env=env)
+        self.env_response_agent = EnvResponseAgent()
 
         env_reset_res = env.reset(task_index=task_index)
         obs = env_reset_res.observation
@@ -288,11 +277,14 @@ You will respond with one of the following:
             action_iteration += 1
             task = self.task_manager.get_next_task()
             if task is None:
-                action_message = self.action_agent_without_task.generate_next_action(self.records, self.information_manager.information)
+                self.handle_no_pending_task()
+                # action_message = self.interaction_agent.interact_with_user_no_task(self.records, self.information_manager.information)
+                # self.process_action(task, action_message)
             else:
-                print(task.get_description())
-                action_message = self.action_agent.generate_next_action(self.records, self.information_manager.information, task)
-            self.process_action(task, action_message)
+                self.handle_task(task)
+            # kdfj
+                # print(task.get_description())
+                # action_message = self.action_agent.generate_next_action(self.records, self.information_manager.information, task)
 
         return SolveResult(
             done=self.done,

@@ -88,6 +88,18 @@ def run(config: RunConfig) -> List[EnvRunResult]:
             )
 
             print(f"Running task {idx}")
+            res = agent.solve(
+                env=isolated_env,
+                task_index=idx,
+            )
+            result = EnvRunResult(
+                task_id=idx,
+                reward=res.reward,
+                info=res.info,
+                traj=res.messages,
+                trial=i,
+                records=res.records,
+            )
             try:
                 res = agent.solve(
                     env=isolated_env,

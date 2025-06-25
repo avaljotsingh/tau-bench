@@ -66,7 +66,8 @@ For the create task, give the output in the following format:
   "tasktype": ,
   "args": 
 }}
-2. You can return the exact python code to execute the corresponding function call.
+2. If you have anough data to execute the function call mentioned in the task description, you should execute it. 
+You can return the exact python code to execute the corresponding function call.
 You can just return the task type and the corresponding function call and the arguments.
 Here is a possible list of functions to call:
 find_user_by_email,
@@ -106,86 +107,145 @@ Do not hallucinate and create your own functions.
         context.append({"role": "user", "content": message})
         return context
     
+    
     def generate_next_action(self, records, information, task):
-        start_time = time.time()
         context = self.get_context(records, information, task)
         action_message = self.generate_next_action_message(context)
-        return action_message
+        action_type, action = self.interpret_action_message(action_message)
+        return action_type, action
     
-
-class ActionAgentWithoutTask():
-    def __init__(self, tools_info, wiki, env):
-        self.tools_info = tools_info
-        self.wiki = wiki
-        self.env = env
-
-    def generate_next_action_message(self, messages):
-        res = completion(messages=messages, tools=self.tools_info)
-        return res.choices[0].message
     
-    def get_context(self, records, information):
-        vars_from_records = ""
-        for i in range(len(records.plan)):
-            vars_from_records += f"{records.plan[i]}\n"
-            if i < len(records.plan_outputs):
-                vars_from_records += f"# {records.plan_outputs[i]}\n"
-        context = [{"role": "system", "content": self.wiki}]
-        if len(list(information.keys())) != 0:
-            message = f"From the conversation with the customer, I have collected the following information: {information}.\n"
+    def interpret_action_message(self, action_message):
+        if action_message['content'] is None:
+            return 'take_action', self.message_to_action(action_message) 
+        elif "###EXECUTE_TASK###" in action_message['content']:
+            return 'take_action', self.extract_action(action_message['content'])
+        elif "###CREATE_TASK###" in action_message['content']:
+            return 'create_task', self.extract_task(action_message['content'])
+        elif "###INTERACT_WITH_USER###" in action_message['content']:
+            return 'interact_with_user', self.extract_interaction_message(action_message['content'])
+        elif "###FILL_IN_MISSING_INFO###" in action_message['content']:
+            return 'fill_in_missing_info', None
         else:
-            message = ""
-        message += f'We have already performed the following tasks: {vars_from_records}.\n'
-        message += f'Can you further interact with the customer to find out what they want.\n'
-        message += f'From the interaction, you can create a task to be performed.\n'
-        message += f'''
-Here is a possible list of possible tasks types. validate_user,
-find_user_by_email,
-find_user_by_zip,
-get_user_details,
-get_product_details,
-get_order_details,
-get_user_input,
-list_all_products,
-calculate,
-think,
-transfer_to_human_agent,
-cancel_pending_order,
-modify_pending_order_address,
-modify_pending_order_items,
-modify_pending_order_payment,
-modify_user_address,
-return_delivered_order_items,
-exchange_delivered_order_items.
-For the create task, give the output in the following format:
-###CREATE_TASK###
-{{
-  "tasktype": ,
-  "args": 
-}}
-If u want to interact with the user to get some information, responsond in the following format:
-###INTERACT_WITH_USER###
-{{
-  "content": 
-}}
-        '''
-        context.append({"role": "user", "content": message})
-        return context
+            print(action_message['content'])
+            raise f'Action message: {action_message['content']} not recognized'
     
-    def generate_next_action(self, records, information):
-        start_time = time.time()
-        context = self.get_context(records, information)
-        action_message = self.generate_next_action_message(context)
-        action = (action_message)
-        action_agent_time.record_time(time.time() - start_time)
+    
+    
+    def message_to_action(self, action_message: Dict[str, Any]) -> Action:
+        if "tool_calls" in action_message and action_message["tool_calls"] is not None and len(action_message["tool_calls"]) > 0 and action_message["tool_calls"][0]["function"] is not None:
+            tool_call = action_message["tool_calls"][0]
+            return Action(
+                name=tool_call["function"]["name"],
+                kwargs=json.loads(tool_call["function"]["arguments"]),
+            )
+        else:
+            return Action(name=RESPOND_ACTION_NAME, kwargs={"content": action_message["content"]})
+    
+    def extract_action(self, action_message):
+        # Step 1: Extract the portion after the marker
+        json_part = action_message.strip().split("###EXECUTE_TASK###")[-1].strip()
+
+        # Try loading it as JSON
+        try:
+            data = json.loads(json_part)
+            raw_call = data.pop("function_call", None)
+            if raw_call is None:
+                raise ValueError("Missing 'function_call' in JSON")
+            
+            # Case: raw_call is just a function name
+            if isinstance(raw_call, str) and '(' not in raw_call:
+                func_name = raw_call
+                if func_name.startswith("functions."):
+                    func_name = func_name[len("functions."):]
+                return Action(name=func_name, kwargs=data)
+
+            # Case: raw_call is a full call in string form
+            if isinstance(raw_call, str):
+                raw_call_str = raw_call
+            else:
+                raise ValueError("Unsupported format for 'function_call'")
+        
+        except json.JSONDecodeError:
+            # Fallback: Try to extract raw function call manually
+            match = re.search(r'"function_call"\s*:\s*(.+)', json_part)
+            if not match:
+                raise ValueError("Invalid format: couldn't extract function_call")
+
+            raw_call_str = match.group(1).strip().rstrip(',').rstrip('}')
+            # Handle non-string values like: functions.foo(...)
+            if raw_call_str.startswith("functions."):
+                raw_call_str = raw_call_str
+
+        # Step 2: Parse function name and arguments
+        func_match = re.match(r'(?:functions\.)?([a-zA-Z_][a-zA-Z0-9_]*)\s*\((.*)\)', raw_call_str)
+        if not func_match:
+            raise ValueError(f"Could not parse function call: {raw_call_str}")
+
+        func_name = func_match.group(1)
+        args_str = func_match.group(2)
+
+        kwargs = {}
+        if args_str.strip():
+            try:
+                fake_call = f"f({args_str})"
+                expr = ast.parse(fake_call, mode='eval')
+                call = expr.body
+                if not isinstance(call, ast.Call):
+                    raise ValueError("Parsed expression is not a function call")
+
+                for kw in call.keywords:
+                    kwargs[kw.arg] = ast.literal_eval(kw.value)
+
+            except Exception as e:
+                raise ValueError(f"Failed to parse arguments: {args_str}") from e
+
+        return Action(name=func_name, kwargs=kwargs)
+    
+
+    def extract_task(self, action_message):
+        _, json_part = action_message.split("###CREATE_TASK###")
+        task_data = json.loads(json_part.strip())
+        task_type_str = task_data["tasktype"]
+        arguments = task_data.get("args", {})
+        new_task = Task(TaskType(task_type_str), args=arguments)
+        return new_task
+    
+
+    def extract_interaction_message(self, action_message):
+        _, json_part = action_message.split("###INTERACT_WITH_USER###", 1)
+        content = json.loads(json_part.strip())["content"]
+        action = Action(name=RESPOND_ACTION_NAME, kwargs={"content": content})
         return action
-    
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class TaskCreator:
     def __init__(self):
         pass
 
     def create_task(self, action_message):
         SYSTEM_PROMPT = f'''
-You are a hlpful formal assistant. The user is talking to a customer support agent.
+You are a helpful formal assistant. The user is talking to a customer support agent.
 Fromn the last user message, we realised that the user wants us to do something that needs a new task creation.
 Can you interpret the message and create a new task?
 Here is a possible list of possible tasks types. validate_user,
