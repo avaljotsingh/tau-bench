@@ -1,0 +1,34 @@
+We are working omn tau-bench. Each benchamrk in this dataset is related to an online shopping platform.
+The users want to modify their orders, like exhanging some items, returning delivered items etc. 
+The way the benchmark works is that they have 
+1. General instructions for the agent in the form of natural language. The are about poliocies like what can be exchanged or returned etc.
+2. They have a task description that needs to be solved which is given to the userthat is simulated by an LLM.
+3. Based on thew task description, the user LLM interacts with the agent and coveys the intent through the conversation.
+4. The agent has access to a dummy database and some API calls like exchange items etc.
+5. An evaluator to find out if thew agent correctly solved the task or not.
+
+The baseline is a tool-calling agent. At each step, it either interacts witht he user or calls a tool to perform an action.
+We tried to add another LLM to this execution, which we refer to as the precondition agent. 
+Whenever the action agent generates the next step and is about to take a critical action like cancel an order, the preconditions agent is invoked.
+If the preconditions agent thinks that the action should not be taken, it generates an advice for the action agent.
+The action agent then may choose to change its action based on the advice.
+From the results, we have filtered some interesting failed cases that may nor may not be related to preconditions.
+
+1. Wrong logic / calculation
+Task 2: 
+The user asked to list all available tshirts in the store. However, even though the data is available, thew agent gave wrong output (11 instead of 10).
+No preconditions were generated here because providing information is not considered a critical action.
+
+2. Precondition was generated and it helped.
+Task 38:
+Read instruction in line 79. The advice was generated in line 305. It helped the action agent to not avoid taking a wrong action.
+
+3. Preconditon wasn't generated but it could have helped.
+Task 27:
+Read instruction in line 55. There are two tasks in the original intent. However, according to the policy, only one of them can be solved.
+The agent should have askled the user's preference. But it didn't. So it ended up solving the wrong intent.
+
+4. Precondition was generated but it was detrimental because it distracted the agent.
+I could find only one example where this happened. So this seems to be just a corner case.
+Task 29:
+Read instruction in like 62. The advice was generated in line 413. But it is wrong.

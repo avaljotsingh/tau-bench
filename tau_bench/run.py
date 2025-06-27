@@ -35,7 +35,7 @@ def run(config: RunConfig) -> List[EnvRunResult]:
     assert config.env in ["retail", "airline"], "Only retail and airline envs are supported"
     assert config.model_provider in provider_list, "Invalid model provider"
     assert config.user_model_provider in provider_list, "Invalid user model provider"
-    assert config.agent_strategy in ["tool-calling", "act", "react", "few-shot", "one-shot", "assertions-agent", "orchestrator"], "Invalid agent strategy"
+    assert config.agent_strategy in ["tool-calling", "act", "react", "few-shot", "one-shot", "assertions-agent", "orchestrator", "tool-calling-with-preconditions", "tool-calling-with-preconditions-and-python"], "Invalid agent strategy"
     assert config.task_split in ["train", "test", "dev"], "Invalid task split"
     assert config.user_strategy in [item.value for item in UserStrategy], "Invalid user strategy"
 
@@ -163,6 +163,28 @@ def agent_factory(
         from tau_bench.agents.tool_calling_agent import ToolCallingAgent
 
         return ToolCallingAgent(
+            tools_info=tools_info,
+            wiki=wiki,
+            model=config.model,
+            provider=config.model_provider,
+            temperature=config.temperature,
+        )
+    elif config.agent_strategy == "tool-calling-with-preconditions":
+        # tool calling with preconditions
+        from tau_bench.agents.tool_calling_with_preconditions import ToolCallingAgentWithPreconditions
+
+        return ToolCallingAgentWithPreconditions(
+            tools_info=tools_info,
+            wiki=wiki,
+            model=config.model,
+            provider=config.model_provider,
+            temperature=config.temperature,
+        )
+    elif config.agent_strategy == "tool-calling-with-preconditions-and-python":
+        # tool calling with preconditions
+        from tau_bench.agents.tool_calling_with_preconditions_and_python import ToolCallingAgentWithPreconditionsAndPython
+
+        return ToolCallingAgentWithPreconditionsAndPython(
             tools_info=tools_info,
             wiki=wiki,
             model=config.model,
