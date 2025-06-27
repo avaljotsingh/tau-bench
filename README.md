@@ -22,7 +22,7 @@ In the following commands, the agent-name can be one of the following:
 2. Tool calling with preconditions in the form of advice: tool-calling-with-preconditions 
 3. Tool calling with preconditions in the form of advice and python code generation: tool-calling-with-preconditions-and-python 
 4. Symbolic multi-agent system: orchestrator 
-With pre and posty conditions: assertions-agent 
+5. With pre and post conditions: assertions-agent 
 
 
 To run specific tasks, use the `--task-ids` flag. For example:
