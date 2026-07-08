@@ -1,11 +1,15 @@
 # Copyright Sierra
-
+import os
 import argparse
 from tau_bench.types import RunConfig
 from tau_bench.run import run
 from litellm import provider_list
 from tau_bench.envs.user import UserStrategy
-
+os.environ.setdefault("TRAPI_API_VERSION", "2025-03-01-preview")
+os.environ.setdefault("TRAPI_INSTANCE", "redmond/interactive/openai")
+os.environ.setdefault("TRAPI_MODEL_NAME", "gpt-5")
+os.environ.setdefault("TRAPI_MODEL_VERSION", "2024-11-20")
+os.environ.setdefault("TRAPI_DEPLOYMENT_NAME", "gpt-5_2025-08-07")
 
 def parse_args() -> RunConfig:
     parser = argparse.ArgumentParser()

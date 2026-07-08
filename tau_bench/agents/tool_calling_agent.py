@@ -1,5 +1,6 @@
 # Copyright Sierra
 
+import os
 import json
 # from litellm import completion
 from tau_bench.trapi_infer import completion, model_dump
@@ -28,15 +29,25 @@ class ToolCallingAgent(Agent):
         self.temperature = temperature
 
     def solve(
-        self, env: Env, task_index: Optional[int] = None, max_num_steps: int = 30
+        self, env: Env, task_index: Optional[int] = None, max_num_steps: int = 30,
+        new_func_name: Optional[str] = None,
     ) -> SolveResult:
+        # new_func_name is informational only: the libgen runner passes the name of
+        # the newly generated tool so post-hoc Metrics can track it. The tool itself
+        # is already exposed through the (rebuilt) MCP server, so the agent simply
+        # needs to accept the argument; it requires no special handling here.
         total_cost = 0.0
         env_reset_res = env.reset(task_index=task_index)
         obs = env_reset_res.observation
         info = env_reset_res.info.model_dump()
         reward = 0.0
+        # Optional usage nudge (e.g. "prefer composite tools to replace multi-step
+        # sequences"). Set via AGENT_PROMPT_SUFFIX; empty by default so normal runs
+        # are unchanged. Used to test whether usage guidance makes the agent
+        # SUBSTITUTE composite tools for step sequences rather than just adding them.
+        system_content = self.wiki + os.environ.get("AGENT_PROMPT_SUFFIX", "")
         messages: List[Dict[str, Any]] = [
-            {"role": "system", "content": self.wiki},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": obs},
         ]
         for k in range(max_num_steps):

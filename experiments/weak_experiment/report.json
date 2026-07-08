@@ -1,0 +1,32 @@
+{
+  "model": "gpt-4o-mini",
+  "n_tasks": 50,
+  "base_accuracy": 34,
+  "augmented_accuracy": 33,
+  "net_delta": -1,
+  "base_failures": 16,
+  "tools_generated": [
+    "public_catalog_count_options",
+    "list_user_items_by_type_with_materials",
+    "find_order_by_item_with_tracking",
+    "get_latest_order_summary_with_retries",
+    "authenticate_and_update_address_plus_cheapest_product"
+  ],
+  "fixed_fail_to_pass": [
+    5,
+    29,
+    30,
+    39,
+    42
+  ],
+  "broke_pass_to_fail": [
+    11,
+    12,
+    31,
+    41,
+    45,
+    47
+  ],
+  "base_avg_tool_calls": 7.34,
+  "augmented_avg_tool_calls": 8.94
+}

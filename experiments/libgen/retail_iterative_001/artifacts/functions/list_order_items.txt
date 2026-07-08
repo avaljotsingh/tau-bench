@@ -1,0 +1,159 @@
+def list_order_items(order_id):
+    """
+{
+  "type": "function",
+  "function": {
+    "name": "list_order_items",
+    "description": "Fetches an order by order_id (auto-prefixing '#' if missing) and compiles a detailed list of its items with item_id, parent product_id, product name/type, option attributes, quantity, and current price by enriching each item via get_item_details.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": "The order id, such as '#W0000000'. If missing the leading '#', it will be added automatically."
+        }
+      },
+      "required": [
+        "order_id"
+      ]
+    }
+  }
+}
+    """
+    order_id = (order_id or "").strip()
+    if not order_id:
+        return {"error": "order_id is required"}
+    if not order_id.startswith("#"):
+        order_id = "#" + order_id
+    try:
+        order = get_order_details(order_id=order_id)
+    except Exception as e:
+        return {"error": f"failed to fetch order details: {e}"}
+    if not isinstance(order, dict):
+        return {"error": "unexpected response format from get_order_details"}
+    if "error" in order:
+        return order
+
+    def _find_items_in_structure(obj):
+        # Recursively search for a list that looks like order items
+        if isinstance(obj, dict):
+            # Prefer common keys first
+            for key in ["items", "order_items", "line_items", "products"]:
+                v = obj.get(key)
+                if isinstance(v, list) and len(v) > 0:
+                    return v
+            # Fallback: scan any list value
+            for k, v in obj.items():
+                if isinstance(v, list) and len(v) > 0:
+                    return v
+            # Recurse into dict values
+            for v in obj.values():
+                found = _find_items_in_structure(v)
+                if found is not None:
+                    return found
+        elif isinstance(obj, list):
+            for x in obj:
+                found = _find_items_in_structure(x)
+                if found is not None:
+                    return found
+        return None
+
+    def _extract_item_id(entry):
+        if isinstance(entry, str):
+            return entry.strip()
+        if not isinstance(entry, dict):
+            return None
+        # Common keys for item id
+        for k in ("item_id", "itemId", "id", "sku", "variant_id", "variantId"):
+            if k in entry:
+                val = entry.get(k)
+                if isinstance(val, (str, int, float)):
+                    return str(val)
+        # Sometimes nested under 'item' or 'variant'
+        for parent in ("item", "variant"):
+            if parent in entry and isinstance(entry[parent], dict):
+                for k in ("item_id", "itemId", "id", "sku", "variant_id", "variantId"):
+                    if k in entry[parent]:
+                        val = entry[parent].get(k)
+                        if isinstance(val, (str, int, float)):
+                            return str(val)
+        return None
+
+    def _extract_quantity(entry):
+        if isinstance(entry, dict):
+            for k in ("quantity", "qty", "count", "units", "amount"):
+                if k in entry:
+                    q = entry.get(k)
+                    try:
+                        return int(q)
+                    except Exception:
+                        try:
+                            return int(float(str(q)))
+                        except Exception:
+                            return 1
+        return 1
+
+    items_list = _find_items_in_structure(order)
+    if not isinstance(items_list, list):
+        # Could not locate items list; return gracefully
+        return {"order_id": order_id, "items": [], "warning": "No items found in order details"}
+
+    # Aggregate quantities per item_id
+    item_quantities = {}
+    for ent in items_list:
+        iid = _extract_item_id(ent)
+        if not iid:
+            # skip entries without clear item_id
+            continue
+        q = _extract_quantity(ent)
+        item_quantities[iid] = item_quantities.get(iid, 0) + (q if isinstance(q, int) else 1)
+
+    results = []
+    for iid, qty in item_quantities.items():
+        try:
+            det = get_item_details(item_id=iid)
+        except Exception as e:
+            results.append({
+                "item_id": iid,
+                "quantity": qty,
+                "error": f"failed to fetch item details: {e}"
+            })
+            continue
+        if not isinstance(det, dict):
+            results.append({"item_id": iid, "quantity": qty, "error": "unexpected item details format"})
+            continue
+        if "error" in det:
+            results.append({"item_id": iid, "quantity": qty, "error": det.get("error")})
+            continue
+        # Extract fields with fallbacks
+        product_id = det.get("product_id") or det.get("productId") or det.get("parent_product_id") or det.get("parentProductId")
+        product_name = det.get("product_name") or det.get("name") or det.get("product_title") or det.get("title")
+        product_type = det.get("product_type") or det.get("type")
+        options = det.get("option_attributes") or det.get("options") or det.get("attributes") or det.get("specs")
+        # Current price
+        current_price = None
+        if isinstance(det.get("current_price"), (int, float, str)):
+            current_price = det.get("current_price")
+        elif isinstance(det.get("price"), (int, float, str)):
+            current_price = det.get("price")
+        elif isinstance(det.get("unit_price"), (int, float, str)):
+            current_price = det.get("unit_price")
+        else:
+            pricing = det.get("pricing") if isinstance(det.get("pricing"), dict) else None
+            if pricing:
+                for k in ("current_price", "price", "unit_price"):
+                    if k in pricing and isinstance(pricing.get(k), (int, float, str)):
+                        current_price = pricing.get(k)
+                        break
+
+        results.append({
+            "item_id": iid,
+            "product_id": product_id,
+            "product_name": product_name,
+            "product_type": product_type,
+            "options": options,
+            "quantity": qty,
+            "current_price": current_price
+        })
+
+    return {"order_id": order_id, "items": results}

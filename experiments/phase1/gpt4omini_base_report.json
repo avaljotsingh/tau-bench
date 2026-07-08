@@ -1,0 +1,21 @@
+{
+  "model": "gpt-4o-mini_2024-07-18",
+  "temperature": 0.0,
+  "n_tasks": 50,
+  "passed": 39,
+  "pass_rate": 0.78,
+  "base_failures": [
+    24,
+    26,
+    28,
+    35,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ],
+  "n_failures": 11
+}

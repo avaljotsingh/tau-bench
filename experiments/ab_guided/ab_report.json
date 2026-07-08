@@ -1,0 +1,22 @@
+{
+  "base": {
+    "n": 20,
+    "avg_reward": 1.0,
+    "solved": 20,
+    "avg_tool_calls": 8.4,
+    "total_tool_calls": 168,
+    "tasks_using_composite": 0,
+    "total_composite_calls": 0
+  },
+  "augmented_guided": {
+    "n": 20,
+    "avg_reward": 0.8,
+    "solved": 16,
+    "avg_tool_calls": 10.35,
+    "total_tool_calls": 207,
+    "tasks_using_composite": 20,
+    "total_composite_calls": 103
+  },
+  "tool_call_reduction_pct": -23.2,
+  "reward_delta": -0.2
+}

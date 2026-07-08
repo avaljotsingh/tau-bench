@@ -1,0 +1,352 @@
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:11:06] INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+[2026-06-22 19:10:54] Using explicit input tasks file: results/tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1201190015.json
+[2026-06-22 19:10:54] Iteration 1
+[2026-06-22 19:10:54] Running generation phase
+[2026-06-22 19:10:54] Generation iteration 1
+Suggested function name: search_product_items
+Attempt 1: invalid synthesis, retrying
+Attempt 2: invalid synthesis, retrying
+Attempt 3: invalid synthesis, retrying
+Suggested function name: get_item_details
+Synthesized function definition:
+def get_item_details(item_id):
+    """
+{
+  "type": "function",
+  "function": {
+    "name": "get_item_details",
+    "description": "Looks up an item by item_id by scanning all product types and their variants, returning its product_id, product name/type, variant options, price, and availability/stock without modifying any data.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "description": "The item id to look up, such as '1008292230' (leading '#' allowed)."
+        }
+      },
+      "required": [
+        "item_id"
+      ]
+    }
+  }
+}
+    """
+    import json
+
+    # Validate input
+    if item_id is None:
+        return {"error": "item_id is required"}
+
+    item_id = str(item_id).strip()
+    if not item_id:
+        return {"error": "item_id is empty"}
+
+    # Helper to normalize and compare item ids (ignore leading '#')
+    def _norm_item_id(x):
+        s = str(x).strip()
+        if s.startswith('#'):
+            s = s[1:]
+        return s
+
+    target_id = _norm_item_id(item_id)
+
+    # Call base tool to get all product types
+    try:
+        pt_resp = list_all_product_types()
+    except Exception as e:
+        return {"error": f"Failed to list product types: {e}"}
+
+    # Extract list of product type records from various possible shapes
+    product_type_records = []
+    if isinstance(pt_resp, list):
+        product_type_records = pt_resp
+    elif isinstance(pt_resp, dict):
+        for key in ("product_types", "products", "data", "items", "list"):
+            val = pt_resp.get(key)
+            if isinstance(val, list):
+                product_type_records = val
+                break
+        else:
+            # If dict itself looks like a single product record
+            if any(k in pt_resp for k in ("product_id", "id", "name", "type")):
+                product_type_records = [pt_resp]
+
+    if not isinstance(product_type_records, list) or len(product_type_records) == 0:
+        return {"error": "Could not retrieve product type list"}
+
+    # Build a quick name map from product type listing
+    name_map = {}
+    for rec in product_type_records:
+        try:
+            pid = rec.get("product_id") if isinstance(rec, dict) else None
+            if pid is None and isinstance(rec, dict):
+                pid = rec.get("id")
+            if pid is not None:
+                pid = str(pid)
+                pname = None
+                ptype = None
+                if isinstance(rec, dict):
+                    pname = rec.get("name") or rec.get("product_name") or rec.get("title")
+                    ptype = rec.get("type") or rec.get("category")
+                name_map[pid] = {"product_name": pname, "product_type": ptype}
+        except Exception:
+            continue
+
+    # Function to extract variants/items list from a product detail record
+    def _extract_variants(pd):
+        if not isinstance(pd, dict):
+            return None
+        # Common keys that may hold variant lists
+        for k in ("items", "variants", "variant_items", "skus", "stock_items"):
+            v = pd.get(k)
+            if isinstance(v, list):
+                return v
+        # Sometimes wrapped in an 'inventory' object
+        inv = pd.get("inventory")
+        if isinstance(inv, dict):
+            for k in ("items", "variants", "skus"):
+                v = inv.get(k)
+                if isinstance(v, list):
+                    return v
+        return None
+
+    # Function to extract product name/type from details with fallback to name_map
+    def _get_product_names(pid, pd):
+        pname = None
+        ptype = None
+        if isinstance(pd, dict):
+            pname = pd.get("name") or pd.get("product_name") or pd.get("title")
+            ptype = pd.get("type") or pd.get("category")
+        if (pname is None or ptype is None) and pid in name_map:
+            if pname is None:
+                pname = name_map[pid].get("product_name")
+            if ptype is None:
+                ptype = name_map[pid].get("product_type") or pname
+        # If still None, set product_type to product_name as a fallback
+        if ptype is None:
+            ptype = pname
+        return pname, ptype
+
+    # Function to extract options from a variant/item dict
+    COMMON_OPTION_KEYS = {
+        "size", "color", "power", "power_source", "capacity", "material",
+        "style", "brightness", "wattage", "lumens", "dimensions", "length",
+        "width", "height", "volume"
+    }
+
+    def _extract_options(it):
+        options = {}
+        if not isinstance(it, dict):
+            return options
+        # Direct options/attributes structures
+        for k in ("options", "attributes", "variant", "option_values"):
+            v = it.get(k)
+            if isinstance(v, dict):
+                for ok, ov in v.items():
+                    options[str(ok)] = ov
+            elif isinstance(v, list):
+                # list of {name, value} pairs
+                for elem in v:
+                    if isinstance(elem, dict):
+                        name = elem.get("name") or elem.get("key")
+                        val = elem.get("value")
+                        if name is not None:
+                            options[str(name)] = val
+        # Extract common option fields directly present
+        for k in COMMON_OPTION_KEYS:
+            if k in it:
+                options[k] = it.get(k)
+        return options
+
+    # Function to extract price from a variant/item or fallbacks
+    def _extract_price(it, pd):
+        price = None
+        if isinstance(it, dict):
+            for k in ("price", "unit_price", "amount", "sale_price", "list_price"):
+                if k in it and it.get(k) is not None:
+                    price = it.get(k)
+                    break
+            # Handle minor units like cents
+            if price is None and "price_cents" in it and it.get("price_cents") is not None:
+                try:
+                    price = float(it.get("price_cents")) / 100.0
+                except Exception:
+                    price = it.get("price_cents")
+        if price is None and isinstance(pd, dict):
+            for k in ("price", "unit_price", "amount", "sale_price", "list_price"):
+                if k in pd and pd.get(k) is not None:
+                    price = pd.get(k)
+                    break
+            if price is None and "price_cents" in pd and pd.get("price_cents") is not None:
+                try:
+                    price = float(pd.get("price_cents")) / 100.0
+                except Exception:
+                    price = pd.get("price_cents")
+        return price
+
+    # Function to extract stock/availability and derive available boolean
+    def _extract_stock_availability(it):
+        stock = None
+        availability = None
+        available = None
+        if not isinstance(it, dict):
+            return stock, availability, available
+        # Direct fields
+        if "in_stock" in it:
+            try:
+                available = bool(it.get("in_stock"))
+            except Exception:
+                available = it.get("in_stock")
+        if "available" in it and available is None:
+            try:
+                available = bool(it.get("available"))
+            except Exception:
+                available = it.get("available")
+        for k in ("stock", "quantity", "qty", "quantity_available"):
+            if k in it and it.get(k) is not None:
+                stock = it.get(k)
+                try:
+                    if available is None and isinstance(stock, (int, float)):
+                        available = stock > 0
+                except Exception:
+                    pass
+                break
+        for k in ("availability", "stock_status", "status"):
+            if k in it and it.get(k) is not None:
+                availability = it.get(k)
+                # Try to infer available from string values
+                if available is None and isinstance(availability, str):
+                    aval = availability.lower()
+                    if any(w in aval for w in ["in stock", "available", "instock"]):
+                        available = True
+                    if any(w in aval for w in ["out of stock", "unavailable", "sold out"]):
+                        available = False
+                break
+        return stock, availability, available
+
+    # Iterate all product types, fetch details, and search for the item
+    for rec in product_type_records:
+        try:
+            pid = None
+            if isinstance(rec, dict):
+                pid = rec.get("product_id") or rec.get("id") or rec.get("productId")
+            if pid is None:
+                continue
+            pid = str(pid)
+            try:
+                pd = get_product_details(product_id=pid)
+            except Exception:
+                continue
+            if isinstance(pd, dict) and pd.get("error"):
+                # Skip problematic product entries
+                continue
+            variants = _extract_variants(pd)
+            # Fallback: sometimes a single-item product might encode the item_id at product level
+            if not variants:
+                # Check if product-level id matches item_id (rare/malformed case)
+                for key in ("item_id", "id", "sku"):
+                    if isinstance(pd, dict) and key in pd:
+                        if _norm_item_id(pd.get(key)) == target_id:
+                            pname, ptype = _get_product_names(pid, pd)
+                            price = _extract_price(pd, pd)
+                            stock, availability, available = _extract_stock_availability(pd)
+                            return {
+                                "item_id": item_id,
+                                "product_id": pid,
+                                "product_name": pname,
+                                "product_type": ptype,
+                                "item_options": _extract_options(pd),
+                                "price": price,
+                                "stock": stock,
+                                "availability": availability,
+                                "available": available
+                            }
+            if not variants or not isinstance(variants, list):
+                continue
+            # Search each variant/item
+            for it in variants:
+                if not isinstance(it, dict):
+                    continue
+                vid = None
+                for key in ("item_id", "id", "itemId", "sku", "variant_id"):
+                    if key in it and it.get(key) is not None:
+                        vid = _norm_item_id(it.get(key))
+                        break
+                if vid is None:
+                    continue
+                if vid != target_id:
+                    continue
+                # Found the item; extract details
+                pname, ptype = _get_product_names(pid, pd)
+                options = _extract_options(it)
+                price = _extract_price(it, pd)
+                stock, availability, available = _extract_stock_availability(it)
+                return {
+                    "item_id": item_id,
+                    "product_id": pid,
+                    "product_name": pname,
+                    "product_type": ptype,
+                    "item_options": options,
+                    "price": price,
+                    "stock": stock,
+                    "availability": availability,
+                    "available": available
+                }
+        except Exception:
+            # Continue scanning other products on any unexpected error
+            continue
+
+    return {"error": "Item not found for the provided item_id"}
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:18:39] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+                    INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:18:54] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+                    INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:19:09] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+                    INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:19:50] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+[06/22/26 19:19:51] INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:20:26] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+                    INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:21:30] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+[06/22/26 19:21:31] INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:22:09] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+                    INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  
+C:\Users\sbarke\AppData\Roaming\Python\Python312\site-packages\litellm\integrations\deepeval\types.py:23: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+  class BaseApiSpan(BaseModel):
+[06/22/26 19:22:21] INFO     Processing request of type           server.py:709
+                             CallToolRequest                                   
+                    INFO     Processing request of type           server.py:709
+                             ListToolsRequest                                  

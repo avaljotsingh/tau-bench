@@ -1,0 +1,13 @@
+{
+  "tools": [
+    "authenticate_user",
+    "calculate_price_difference",
+    "get_order_summary",
+    "list_user_orders_with_status",
+    "validate_order_action",
+    "modify_pending_order",
+    "get_order_context"
+  ],
+  "source": "gpt-4o solved trajectories",
+  "generator": "o4-mini_2025-04-16"
+}

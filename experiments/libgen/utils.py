@@ -69,6 +69,62 @@ def normalize_ids(ids_or_range: Union[List[int], Tuple[int, int]]) -> List[int]:
     raise ValueError("IDs must be [start, end) or a list of integers")
 
 
+# Tool-name markers used to infer the benchmark domain of a results file when
+# the file does not record an explicit env (the tau-bench result `info` block
+# typically does not). Detection is based on which environment's tools appear
+# in the recorded trajectories.
+_ENV_TOOL_MARKERS = {
+    "retail": (
+        "find_user_id_by_name_zip",
+        "get_product_details",
+        "get_order_details",
+        "exchange_delivered_order_items",
+        "return_delivered_order_items",
+        "list_all_product_types",
+    ),
+    "airline": (
+        "book_reservation",
+        "search_direct_flight",
+        "search_onestop_flight",
+        "update_reservation_passengers",
+        "update_reservation_flights",
+        "get_reservation_details",
+    ),
+}
+
+
+def detect_env_in_results(path: str) -> Optional[str]:
+    """Infer the benchmark env ('retail'/'airline') from a results file.
+
+    Prefers an explicit env recorded in the result `info` block; otherwise
+    falls back to counting environment-specific tool names in the raw file
+    text and returns the dominant env (None if neither/ambiguous).
+    """
+    try:
+        data = load_json(path)
+    except Exception:
+        return None
+    if not isinstance(data, list) or len(data) == 0:
+        return None
+    info = data[0].get("info", {}) if isinstance(data[0], dict) else {}
+    explicit = info.get("env") or info.get("environment")
+    if explicit in _ENV_TOOL_MARKERS:
+        return explicit
+    blob = json.dumps(data)
+    counts = {
+        env: sum(blob.count(marker) for marker in markers)
+        for env, markers in _ENV_TOOL_MARKERS.items()
+    }
+    best = max(counts, key=counts.get)
+    if counts[best] == 0:
+        return None
+    # Require a clear majority to avoid mislabeling mixed-domain files.
+    others = sum(v for k, v in counts.items() if k != best)
+    if counts[best] <= others:
+        return None
+    return best
+
+
 def find_latest_results(
     logs_dir: str,
     filename_glob: str,
@@ -85,19 +141,11 @@ def find_latest_results(
     if not validate_env_in_file:
         return candidates[0]
     for path in candidates:
-        try:
-            data = load_json(path)
-            if isinstance(data, list) and len(data) > 0:
-                # Heuristic: result.info may contain env; if not present we accept first
-                info = data[0].get("info", {})
-                file_env = info.get("env") or info.get("environment")
-                if file_env is None:
-                    return path
-                if file_env == env:
-                    return path
-        except Exception:
-            continue
-    return candidates[0]
+        if detect_env_in_results(path) == env:
+            return path
+    # No file matched the requested env: fail loudly rather than silently
+    # feeding the wrong domain's trajectories into generation.
+    return None
 
 
 def extract_minimal_tasks_from_results(results_path: str) -> List[Dict[str, Any]]:

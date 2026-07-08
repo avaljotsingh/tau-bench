@@ -2,6 +2,7 @@
 
 import os
 import json
+import time
 import random
 import traceback
 from math import comb
@@ -85,15 +86,34 @@ def run(config: RunConfig) -> List[EnvRunResult]:
             random.shuffle(idxs)
 
         def _run(idx: int) -> EnvRunResult:
-            isolated_env = get_env(
-                config.env,
-                user_strategy=config.user_strategy,
-                user_model=config.user_model,
-                task_split=config.task_split,
-                user_provider=config.user_model_provider,
-                task_index=idx,
-                mcp_server=config.mcp_server,
-            )
+            # Build the env inside the guarded block: a transient failure here
+            # (a TRAPI/network blip, or fastmcp's diskcache-store import racing when
+            # many MCP-server subprocesses spawn at once) must fail only THIS task,
+            # not crash the run. These races clear on retry, so retry a few times.
+            isolated_env = None
+            for _attempt in range(5):
+                try:
+                    isolated_env = get_env(
+                        config.env,
+                        user_strategy=config.user_strategy,
+                        user_model=config.user_model,
+                        task_split=config.task_split,
+                        user_provider=config.user_model_provider,
+                        task_index=idx,
+                        mcp_server=config.mcp_server,
+                    )
+                    break
+                except Exception as e:
+                    time.sleep(1.5 * (_attempt + 1))
+                    last_setup_err = e
+            if isolated_env is None:
+                import traceback as _tb
+                print("❌", f"task_id={idx}", "env setup failed after retries:", str(last_setup_err))
+                return EnvRunResult(
+                    task_id=idx, reward=0.0,
+                    info={"error": str(last_setup_err), "traceback": "".join(_tb.format_exception(type(last_setup_err), last_setup_err, last_setup_err.__traceback__))},
+                    traj=[], trial=i, records={},
+                )
 
             print(f"Running task {idx}")
             # res = agent.solve(
@@ -128,7 +148,12 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                     info=res.info,
                     traj=res.messages,
                     trial=i,
-                    records=res.records,
+                    # Persist the COMPLETE action list (incl. final writes) so trajectories are
+                    # replay-faithful offline; res.messages/traj is a display log that drops writes.
+                    records={**(res.records or {}), "env_actions": [
+                        {"name": a.name, "kwargs": a.kwargs}
+                        for a in getattr(isolated_env, "actions", [])
+                    ]},
                 )
             except Exception as e:
                 result = EnvRunResult(
@@ -160,12 +185,28 @@ def run(config: RunConfig) -> List[EnvRunResult]:
                     json.dump(data + [temp], f, indent=2)
                 return result
 
-        # with ThreadPoolExecutor(max_workers=config.max_concurrency) as executor:
-        #     res = list(executor.map(_run, idxs))
-        #     results.extend(res)
-        for i in idxs:
-            result = _run(i)
-            results.append(result)
+        # Run tasks concurrently. _run is thread-safe: each task gets an isolated
+        # env, the shared agent is only read, and checkpoint writes are guarded by
+        # `lock`. max_concurrency caps the number of in-flight tasks.
+        # Collect per-future so that ANY unexpected exception escaping a single
+        # task is recorded as a failed task instead of aborting the whole run.
+        def _safe_run(idx: int) -> EnvRunResult:
+            try:
+                return _run(idx)
+            except Exception as e:
+                print("❌", f"task_id={idx}", "uncaught task error:", str(e))
+                return EnvRunResult(
+                    task_id=idx, reward=0.0,
+                    info={"error": str(e), "traceback": traceback.format_exc()},
+                    traj=[], trial=i, records={},
+                )
+
+        if config.max_concurrency and config.max_concurrency > 1:
+            with ThreadPoolExecutor(max_workers=config.max_concurrency) as executor:
+                results.extend(executor.map(_safe_run, idxs))
+        else:
+            for idx in idxs:
+                results.append(_safe_run(idx))
 
     display_metrics(results)
 

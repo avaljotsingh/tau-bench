@@ -1,0 +1,15 @@
+{
+  "model": "gpt-4o_2024-11-20",
+  "temperature": 0.0,
+  "n_tasks": 50,
+  "passed": 45,
+  "pass_rate": 0.9,
+  "base_failures": [
+    2,
+    5,
+    17,
+    21,
+    41
+  ],
+  "G1_gate": "SATURATED -> consider harder tasks"
+}

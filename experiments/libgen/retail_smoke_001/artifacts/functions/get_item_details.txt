@@ -1,0 +1,181 @@
+def get_item_details(item_id):
+    """
+{
+  "type": "function",
+  "function": {
+    "name": "get_item_details",
+    "description": "Searches across all product types to locate a specific item by item_id, then returns its parent product_id and product name/type, along with the item's option attributes, current price, availability/stock status, and any compatibility metadata.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "item_id": {
+          "type": "string",
+          "description": "The unique item id to look up, such as '1008292230'."
+        }
+      },
+      "required": [
+        "item_id"
+      ]
+    }
+  }
+}
+    """
+    item_id = str(item_id).strip()
+    if not item_id:
+        return {"error": "item_id is required"}
+
+    try:
+        product_types = list_all_product_types()
+    except Exception as e:
+        return {"error": f"Failed to list product types: {e}"}
+
+    if isinstance(product_types, dict) and product_types.get("error"):
+        return {"error": f"Failed to list product types: {product_types.get('error')}"}
+
+    # Normalize product types list
+    iterables = []
+    if isinstance(product_types, list):
+        iterables = product_types
+    elif isinstance(product_types, dict):
+        for key in ["products", "product_types", "items", "data", "results"]:
+            if isinstance(product_types.get(key), list):
+                iterables = product_types.get(key)
+                break
+        if not iterables:
+            # If the dict itself looks like a single product entry
+            if any(k in product_types for k in ["product_id", "productId", "id"]):
+                iterables = [product_types]
+
+    if not isinstance(iterables, list) or not iterables:
+        # Even if empty, we can't proceed without product ids
+        return {"error": "No product types available to search for the given item_id."}
+
+    # Recursive search for an item dict containing the matching item_id
+
+    def _search_item(obj, target):
+        if isinstance(obj, dict):
+            cand = obj.get("item_id")
+            if cand is None and "itemId" in obj:
+                cand = obj.get("itemId")
+            if cand is not None and str(cand) == str(target):
+                return obj
+            for v in obj.values():
+                found = _search_item(v, target)
+                if found is not None:
+                    return found
+        elif isinstance(obj, list):
+            for el in obj:
+                found = _search_item(el, target)
+                if found is not None:
+                    return found
+        return None
+
+    # Iterate products and search
+    for entry in iterables:
+        if not isinstance(entry, dict):
+            continue
+        pid = entry.get("product_id") or entry.get("productId") or entry.get("id")
+        if pid is None:
+            continue
+        pname = entry.get("name") or entry.get("product_name") or entry.get("type") or entry.get("title")
+        try:
+            details = get_product_details(str(pid))
+        except Exception:
+            continue
+        if isinstance(details, dict) and details.get("error"):
+            continue
+
+        found_item = _search_item(details, item_id)
+        if not found_item:
+            continue
+
+        # Extract product name/type from details if not present
+        product_name = pname
+        if not product_name and isinstance(details, dict):
+            product_name = details.get("name") or details.get("product_name") or details.get("type") or details.get("title")
+
+        # Extract options/attributes
+        options = None
+        for key in ["options", "attributes", "specs", "option", "variant_options", "variant", "configuration"]:
+            if isinstance(found_item.get(key), (dict, list, str, int, float)):
+                options = found_item.get(key)
+                break
+        if options is None:
+            common_keys = [
+                "size", "color", "colour", "material", "style", "model", "capacity", "length", "width", "height", "dimensions", "switch", "backlight", "connectivity"
+            ]
+            collected = {}
+            for k in common_keys:
+                if k in found_item:
+                    collected[k] = found_item.get(k)
+            if collected:
+                options = collected
+
+        # Extract price and currency
+        price = None
+        currency = None
+        val = found_item.get("price")
+        if isinstance(val, (int, float, str)):
+            price = val
+        elif isinstance(val, dict):
+            amt = val.get("current") or val.get("amount") or val.get("value") or val.get("price")
+            cur = val.get("currency") or val.get("currency_code")
+            if amt is not None:
+                price = amt
+            if cur:
+                currency = cur
+        if price is None:
+            for k in ["current_price", "sale_price", "list_price", "msrp"]:
+                if k in found_item:
+                    price = found_item.get(k)
+                    break
+        if price is None and isinstance(found_item.get("pricing"), dict):
+            pr = found_item.get("pricing")
+            for k in ["current", "price", "sale", "list", "msrp", "amount", "value"]:
+                if k in pr:
+                    price = pr.get(k)
+                    break
+            currency = currency or pr.get("currency") or pr.get("currency_code")
+
+        # Extract availability
+        availability = None
+        if "availability" in found_item:
+            availability = found_item.get("availability")
+        elif "in_stock" in found_item:
+            availability = "in stock" if bool(found_item.get("in_stock")) else "out of stock"
+        elif "stock_status" in found_item:
+            availability = found_item.get("stock_status")
+        elif "available" in found_item:
+            availability = "available" if bool(found_item.get("available")) else "unavailable"
+        elif "quantity" in found_item:
+            q = found_item.get("quantity")
+            try:
+                qn = int(q)
+                availability = "in stock" if qn > 0 else "out of stock"
+            except Exception:
+                availability = q
+        elif "inventory_status" in found_item:
+            availability = found_item.get("inventory_status")
+
+        # Extract compatibility metadata
+        compatibility = None
+        for key in ["compatibility", "compatible_with", "platforms", "ecosystem", "smart_home", "protocols", "supports"]:
+            if key in found_item:
+                compatibility = found_item.get(key)
+                break
+
+        res = {
+            "item_id": str(item_id),
+            "product_id": str(pid),
+            "product_name": product_name,
+            "options": options,
+            "price": price,
+            "currency": currency,
+            "availability": availability,
+            "compatibility": compatibility
+        }
+        # Remove None values for conciseness
+        cleaned = {k: v for k, v in res.items() if v is not None}
+        return cleaned
+
+    return {"error": "Item ID not found"}

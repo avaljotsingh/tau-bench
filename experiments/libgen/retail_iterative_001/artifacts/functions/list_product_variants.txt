@@ -1,0 +1,234 @@
+def list_product_variants(product_id):
+    """
+{
+  "type": "function",
+  "function": {
+    "name": "list_product_variants",
+    "description": "Lists all variant items for a given product_id, returning each variant's item_id, option attributes (e.g., size, color), current price, and stock availability. Useful for locating specific variants, checking availability, identifying the cheapest option, and collecting new_item_ids for modify/exchange actions.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "product_id": {
+          "type": "string",
+          "description": "The product id whose variants to list, e.g., '6086499569'."
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    }
+  }
+}
+    """
+    import math
+    import json
+
+    # Validate input
+    if product_id is None or not isinstance(product_id, str) or not product_id.strip():
+        return {"error": "product_id must be a non-empty string"}
+
+    # Helper parsers
+    def _to_float_price(obj):
+        # Try common fields for price
+        for key in ("price", "current_price", "sale_price", "amount", "unit_price"):
+            if isinstance(obj, dict) and key in obj and obj[key] is not None:
+                try:
+                    return float(obj[key])
+                except Exception:
+                    pass
+        # Cents-based fields
+        for key in ("price_cents", "amount_cents"):
+            if isinstance(obj, dict) and key in obj and obj[key] is not None:
+                try:
+                    return float(obj[key]) / 100.0
+                except Exception:
+                    pass
+        return None
+
+    def _extract_options(obj):
+        if not isinstance(obj, dict):
+            return None
+        if isinstance(obj.get("options"), dict):
+            return obj.get("options")
+        if isinstance(obj.get("attributes"), dict):
+            return obj.get("attributes")
+        if isinstance(obj.get("option_attributes"), dict):
+            return obj.get("option_attributes")
+        # Heuristic: collect common option keys if present
+        option_keys = [
+            "size", "color", "colour", "width", "length", "style", "material", "capacity",
+            "pattern", "fit", "waist", "inseam", "variant", "finish"
+        ]
+        found = {k: obj[k] for k in option_keys if k in obj}
+        return found if found else None
+
+
+    def _extract_availability(obj):
+        # Returns (in_stock_bool_or_None, stock_int_or_None)
+        if not isinstance(obj, dict):
+            return (None, None)
+        # stock count
+        stock = None
+        for k in ("stock", "inventory", "quantity_available", "qty", "available_quantity"):
+            if k in obj and obj[k] is not None:
+                try:
+                    stock = int(obj[k])
+                except Exception:
+                    # if boolean sneaks in, ignore
+                    pass
+                break
+        # booleans
+        in_stock = None
+        for k in ("in_stock", "available", "is_available", "is_in_stock"):
+            if k in obj and isinstance(obj[k], bool):
+                in_stock = obj[k]
+                break
+        # availability string
+        if in_stock is None and isinstance(obj.get("availability"), str):
+            s = obj.get("availability").strip().lower()
+            if any(tag in s for tag in ["in stock", "available", "instock"]):
+                in_stock = True
+            elif any(tag in s for tag in ["out of stock", "unavailable", "sold out"]):
+                in_stock = False
+        if in_stock is None and isinstance(stock, int):
+            in_stock = stock > 0
+        return (in_stock, stock)
+
+
+    def _extract_item_id(obj):
+        if isinstance(obj, str):
+            return obj
+        if not isinstance(obj, dict):
+            return None
+        for k in ("item_id", "itemId", "id", "sku_id", "sku", "variant_id"):
+            if k in obj and obj[k] is not None:
+                try:
+                    return str(obj[k])
+                except Exception:
+                    return None
+        return None
+
+
+    def _enrich_from_get_item_details(item_id):
+        try:
+            d = get_item_details(item_id=item_id)
+        except Exception as e:
+            return {}
+        # Parse JSON string responses
+        if isinstance(d, str):
+            try:
+                d = json.loads(d)
+            except Exception:
+                return {}
+        if not isinstance(d, dict):
+            return {}
+        # Some APIs may nest details under a key; flatten best-effort
+        candidate = d
+        # If there's a single nested dict containing options/price fields, use it
+        for key in ("item", "data", "details", "result"):
+            if isinstance(d.get(key), dict):
+                candidate = d.get(key)
+                break
+        price = _to_float_price(candidate)
+        opts = _extract_options(candidate)
+        instock, stock = _extract_availability(candidate)
+        return {
+            "price": price,
+            "options": opts,
+            "in_stock": instock,
+            "stock": stock,
+            "product_id": candidate.get("product_id") or d.get("product_id"),
+            "product_name": candidate.get("product_name") or candidate.get("product") or d.get("product_name") or d.get("product")
+        }
+
+
+    # Fetch product details
+    try:
+        p = get_product_details(product_id=product_id)
+    except Exception as e:
+        return {"error": f"get_product_details failed: {e}"}
+
+    # Parse JSON string response if needed
+    if isinstance(p, str):
+        try:
+            p = json.loads(p)
+        except Exception:
+            return {"error": "Unexpected response format from get_product_details"}
+
+    if not isinstance(p, dict):
+        return {"error": "Unexpected response format from get_product_details"}
+    if "error" in p:
+        return {"error": p.get("error")}
+
+    product_name = p.get("name") or p.get("product_name") or p.get("title")
+
+    # Collect potential variant containers
+    candidates = []
+    for key in ("items", "variants", "skus", "inventory", "inventory_items", "children"):
+        v = p.get(key)
+        if isinstance(v, list):
+            candidates.extend(v)
+        elif isinstance(v, dict):
+            # If dict of item_id -> details
+            candidates.extend(list(v.values()))
+
+    # If still empty, sometimes product details contain top-level 'item_ids'
+    if not candidates and isinstance(p.get("item_ids"), list):
+        candidates.extend(p.get("item_ids"))
+
+    if not candidates:
+        return {
+            "product_id": product_id,
+            "product_name": product_name,
+            "variants": []
+        }
+
+    variants = []
+    seen = set()
+    for cand in candidates:
+        iid = _extract_item_id(cand)
+        if not iid or iid in seen:
+            continue
+        seen.add(iid)
+        # Try to extract from candidate directly first
+        price = _to_float_price(cand) if isinstance(cand, dict) else None
+        options = _extract_options(cand) if isinstance(cand, dict) else None
+        in_stock, stock = _extract_availability(cand) if isinstance(cand, dict) else (None, None)
+
+        # Enrich missing fields via get_item_details
+        if price is None or options is None or in_stock is None:
+            enriched = _enrich_from_get_item_details(iid)
+            if price is None:
+                price = enriched.get("price")
+            if options is None:
+                options = enriched.get("options")
+            if in_stock is None:
+                in_stock = enriched.get("in_stock")
+            if stock is None:
+                stock = enriched.get("stock")
+            if product_name is None:
+                product_name = enriched.get("product_name") or product_name
+
+        # Ensure JSON-serializable primitives
+        try:
+            price_val = float(price) if price is not None and not (isinstance(price, float) and (math.isnan(price) or math.isinf(price))) else price
+        except Exception:
+            price_val = None
+
+        variant_entry = {
+            "item_id": str(iid),
+            "options": options if isinstance(options, dict) else ({} if options is None else {"value": options}),
+            "price": price_val,
+            "in_stock": bool(in_stock) if isinstance(in_stock, bool) else (None if in_stock is None else bool(in_stock)),
+            "stock": stock if (isinstance(stock, int) or stock is None) else None
+        }
+        variants.append(variant_entry)
+
+    # Sort by price (ascending) when available, otherwise by item_id
+    variants.sort(key=lambda x: (float('inf') if x.get('price') is None else x.get('price'), x.get('item_id')))
+
+    return {
+        "product_id": product_id,
+        "product_name": product_name,
+        "variants": variants
+    }

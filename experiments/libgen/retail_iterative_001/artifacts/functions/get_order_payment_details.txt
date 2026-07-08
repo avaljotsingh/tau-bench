@@ -1,0 +1,165 @@
+def get_order_payment_details(order_id):
+    """
+{
+  "type": "function",
+  "function": {
+    "name": "get_order_payment_details",
+    "description": "Looks up an order and extracts the original payment method used, returning its type (gift card, credit card, PayPal), masked identifier (e.g., last four digits or email), payment_method_id, and a refund timeline hint.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "order_id": {
+          "type": "string",
+          "description": "The order id to look up, such as '#W0000000'. If missing the leading '#', it will be added."
+        }
+      },
+      "required": [
+        "order_id"
+      ]
+    }
+  }
+}
+    """
+    import re
+
+    order_id = '' if order_id is None else str(order_id).strip()
+    if not order_id:
+        return {"error": "order_id is required"}
+    if not order_id.startswith('#'):
+        order_id = '#' + order_id
+
+    resp = get_order_details(order_id=order_id)
+    if not isinstance(resp, dict):
+        return {"error": "Unexpected response from get_order_details"}
+    if 'error' in resp:
+        try:
+            return {"error": str(resp['error'])}
+        except Exception:
+            return {"error": "Failed to fetch order details"}
+
+    order = resp.get('order') or resp.get('data') or resp
+
+    def get_in(d, path):
+        cur = d
+        for k in path:
+            if isinstance(cur, dict) and k in cur:
+                cur = cur[k]
+            else:
+                return None
+        return cur
+
+    # Extract payment_method_id
+    candidates_pm_id = [
+        ["payment_method_id"], ["paymentMethodId"],
+        ["payment", "payment_method_id"], ["payment", "paymentMethodId"],
+        ["payment_method", "id"], ["paymentDetails", "id"],
+        ["payment", "id"], ["payment_info", "id"], ["paymentInfo", "id"]
+    ]
+    pm_id = None
+    for p in candidates_pm_id:
+        val = get_in(order, p)
+        if isinstance(val, str) and val.strip():
+            pm_id = val.strip()
+            break
+
+    if pm_id is None:
+        charges = order.get('charges') if isinstance(order, dict) else None
+        if isinstance(charges, list) and charges:
+            for ch in charges:
+                if isinstance(ch, dict):
+                    val = ch.get('payment_method_id') or ch.get('paymentMethodId') or ch.get('payment_method') or ch.get('id')
+                    if isinstance(val, str) and val.strip():
+                        pm_id = val.strip()
+                        break
+
+    if pm_id is None:
+        return {"error": "Payment method information not found for this order."}
+
+    # Extract payment method type
+    candidates_type = [
+        ["payment_method_type"], ["paymentType"],
+        ["payment", "payment_method_type"], ["payment", "type"],
+        ["payment_method", "type"], ["paymentDetails", "type"],
+        ["payment_info", "type"], ["paymentInfo", "type"]
+    ]
+    p_type = None
+    for p in candidates_type:
+        val = get_in(order, p)
+        if isinstance(val, str) and val.strip():
+            p_type = val.strip()
+            break
+
+    if not p_type:
+        lid = pm_id.lower()
+        if lid.startswith('gift_card') or ('gift' in lid and 'card' in lid):
+            p_type = 'gift card'
+        elif lid.startswith('paypal') or 'paypal' in lid:
+            p_type = 'PayPal'
+        elif lid.startswith('credit_card') or 'card' in lid:
+            p_type = 'credit card'
+
+    # Extract masked identifier
+    masked = None
+    candidates_mask = [
+        ["masked_identifier"], ["masked"], ["mask"],
+        ["payment", "masked_identifier"], ["payment", "masked"],
+        ["payment_method", "masked_identifier"], ["payment_method", "masked"],
+        ["paymentDetails", "masked_identifier"], ["paymentDetails", "masked"],
+        ["payment_info", "masked_identifier"], ["payment_info", "masked"],
+        ["paymentInfo", "masked_identifier"], ["paymentInfo", "masked"],
+        ["payment", "display"], ["paymentDetails", "display"], ["payment_method", "display"]
+    ]
+    for p in candidates_mask:
+        val = get_in(order, p)
+        if isinstance(val, str) and val.strip():
+            masked = val.strip()
+            break
+
+    # Try last4-based masking
+    if not masked:
+        last4 = None
+        last4_keys = [["last4"], ["last_four"], ["ending_in"], ["suffix"], ["payment", "last4"], ["payment_method", "last4"], ["paymentDetails", "last4"], ["payment_info", "last4"], ["paymentInfo", "last4"]]
+        for p in last4_keys:
+            val = get_in(order, p)
+            if isinstance(val, (str, int)):
+                s = str(val).strip()
+                if s.isdigit():
+                    last4 = s[-4:]
+                    break
+        if last4:
+            masked = '\u2022\u2022\u2022\u2022 ' + last4
+
+    # Try email
+    if not masked:
+        email_keys = [["email"], ["paypal_email"], ["payment", "email"], ["paymentDetails", "email"], ["payment_method", "email"], ["payment_info", "email"], ["paymentInfo", "email"]]
+        for p in email_keys:
+            val = get_in(order, p)
+            if isinstance(val, str) and '@' in val:
+                masked = val.strip()
+                break
+
+    # Derive from pm_id if still missing
+    if not masked:
+        if p_type and p_type.lower() == 'credit card':
+            m = re.search(r"(\d{4})\b", pm_id)
+            if m:
+                masked = '\u2022\u2022\u2022\u2022 ' + m.group(1)
+        elif p_type and p_type.lower() == 'paypal':
+            m = re.search(r"([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})", pm_id)
+            if m:
+                masked = m.group(1)
+        elif p_type and p_type.lower() == 'gift card':
+            m = re.search(r"(\d{4})\b", pm_id)
+            if m:
+                masked = '\u2022\u2022\u2022\u2022 ' + m.group(1)
+
+    # Refund timeline hint
+    timeline = 'immediate' if (p_type and p_type.lower() == 'gift card') else '5-7 business days'
+
+    return {
+        "order_id": order_id,
+        "payment_method_id": pm_id,
+        "type": p_type or 'unknown',
+        "masked_identifier": masked or None,
+        "refund_timeline": timeline
+    }

@@ -1,0 +1,259 @@
+{
+  "label": "augmented",
+  "run": "experiments/weak_experiment/augmented_run.json",
+  "n_tasks": 50,
+  "deterministic_passed": 14,
+  "agreement_with_recorded": "23/50",
+  "per_task": {
+    "0": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 12
+    },
+    "1": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 11
+    },
+    "2": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 12
+    },
+    "3": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 5
+    },
+    "4": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 4
+    },
+    "5": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 7
+    },
+    "6": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 9
+    },
+    "7": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 9
+    },
+    "8": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 8
+    },
+    "9": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 12
+    },
+    "10": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 6
+    },
+    "11": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 7
+    },
+    "12": {
+      "replay_reward": 1.0,
+      "recorded_reward": 0.0,
+      "n_calls": 28
+    },
+    "13": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 7
+    },
+    "14": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 6
+    },
+    "15": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 8
+    },
+    "16": {
+      "replay_reward": 1.0,
+      "recorded_reward": 0.0,
+      "n_calls": 9
+    },
+    "17": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 4
+    },
+    "18": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 6
+    },
+    "19": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 5
+    },
+    "20": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 21
+    },
+    "21": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 1
+    },
+    "22": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 3
+    },
+    "23": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 10
+    },
+    "24": {
+      "replay_reward": 1.0,
+      "recorded_reward": 0.0,
+      "n_calls": 10
+    },
+    "25": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 8
+    },
+    "26": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 7
+    },
+    "27": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 17
+    },
+    "28": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 8
+    },
+    "29": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 11
+    },
+    "30": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 20
+    },
+    "31": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 19
+    },
+    "32": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 7
+    },
+    "33": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 5
+    },
+    "34": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 3
+    },
+    "35": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 5
+    },
+    "36": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 5
+    },
+    "37": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 8
+    },
+    "38": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 6
+    },
+    "39": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 9
+    },
+    "40": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 7
+    },
+    "41": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 7
+    },
+    "42": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 14
+    },
+    "43": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 1
+    },
+    "44": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 5
+    },
+    "45": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 13
+    },
+    "46": {
+      "replay_reward": 1.0,
+      "recorded_reward": 0.0,
+      "n_calls": 8
+    },
+    "47": {
+      "replay_reward": 0.0,
+      "recorded_reward": 0.0,
+      "n_calls": 11
+    },
+    "48": {
+      "replay_reward": 1.0,
+      "recorded_reward": 1.0,
+      "n_calls": 9
+    },
+    "49": {
+      "replay_reward": 0.0,
+      "recorded_reward": 1.0,
+      "n_calls": 14
+    }
+  }
+}

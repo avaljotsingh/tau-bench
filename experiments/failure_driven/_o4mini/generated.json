@@ -1,0 +1,25 @@
+{
+  "tools": [
+    "modify_pending_order_full",
+    "modify_pending_order_items_by_spec",
+    "request_user_clarification",
+    "manage_order_request",
+    "get_user_order_summary",
+    "get_complete_order_summary",
+    "gather_user_requirements",
+    "find_cheapest_variant"
+  ],
+  "fail_ids": [
+    24,
+    26,
+    28,
+    35,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ]
+}

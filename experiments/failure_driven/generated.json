@@ -1,0 +1,25 @@
+{
+  "tools": [
+    "find_best_matching_variant_ids_for_modification",
+    "auto_task_trigger_on_empty_input",
+    "auto_task_interpreter_dispatcher",
+    "auto_detect_and_prompt_when_user_input_missing",
+    "auto_resolve_missing_instruction_or_input",
+    "auto_detect_missing_context_and_prompt",
+    "auto_detect_and_prompt_for_task",
+    "auto_handle_empty_input"
+  ],
+  "fail_ids": [
+    24,
+    26,
+    28,
+    35,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ]
+}

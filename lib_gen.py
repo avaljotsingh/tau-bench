@@ -1,9 +1,11 @@
 import json
 import os
+import ast
+import textwrap
 from termcolor import colored
 from llmagent import LLMAgent
 from libgen_utils import *
-from tau_bench.trapi_infer import completion, model_dump
+from tau_bench.trapi_infer import completion, gen_completion, model_dump
 
 class FunctionSuggestionAgent(LLMAgent):
     def __init__(self, *args, **kwargs):
@@ -25,14 +27,14 @@ Output only the name of the function, its arguments and the description in the f
 '''
         user_message = "\n".join(f"Conversation: {task['traj']}" for task in tasks)
         user_message += f"\nCurrent Library: {library}"
-        response = completion(
+        response = gen_completion(
             model=self.model_name,
             custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            response_format={"type": "json_object"},
+            response_format="json_object",
         )
         msg = model_dump(response.choices[0].message)
         content = msg["content"].strip()
@@ -58,7 +60,7 @@ Just output the function names in the correct order.
 Do not output any explanation or anything else. 
 If there are multiple functions that can be defined, prefer the one that has more utility.
 '''
-        response = completion(
+        response = gen_completion(
             model=self.model_name,
             custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
             messages=[
@@ -96,14 +98,14 @@ Output a JSON object in the following fomat:
 }}
 '''
         user_message = f'Current available functions: {library}\nNew function: {new_func}\nSolved Tasks: {tasks}'
-        response = completion(
+        response = gen_completion(
             model=self.model_name,
             custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            response_format={"type": "json_object"}
+            response_format="json_object"
         )
         msg = model_dump(response.choices[0].message)
         content = msg["content"].strip()
@@ -139,14 +141,14 @@ Output only the format in the following json format:
 }}
 '''
         user_message = f'Function {func}'
-        response = completion(
+        response = gen_completion(
             model=self.model_name,
             custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_message},
             ],
-            response_format={"type": "json_object"}
+            response_format="json_object"
         )
         msg = model_dump(response.choices[0].message)
         content = msg["content"].strip()
@@ -172,14 +174,14 @@ Output a JSON object in the following fomat:
     "explanation": <explanation>
 }}
 '''
-        response = completion(
+        response = gen_completion(
             model=self.model_name,
             custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": f'{func}'},
             ],
-            response_format={"type": "json_object"}
+            response_format="json_object"
         )
         msg = model_dump(response.choices[0].message)
         content = msg["content"].strip()
@@ -208,11 +210,11 @@ Output a JSON object in the following fomat:
 Only change the things that caused the mistake. Do not predict any new changes.
 '''
         messages = [{"role": "system", "content": system_prompt}] + new_func_def_history + [{"role": "user", "content": f'Old Library: {old_library}\nNew Function: {new_func}\n\nNew Trajectory: {new_trajectory}'}]
-        response = completion(
+        response = gen_completion(
             model=self.model_name,
             custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
             messages=messages,
-            response_format={"type": "json_object"}
+            response_format="json_object"
         )
         msg = model_dump(response.choices[0].message)
         content = msg["content"].strip()
@@ -264,63 +266,287 @@ Only change the things that caused the mistake. Do not predict any new changes.
 #         return False
 
 
+class FunctionSynthesisAgent(LLMAgent):
+    """Deterministic-assembly tool generator.
+
+    The model only fills three narrow, validated slots (description, parameter
+    schema, and the function body). This module owns the structure: the `def`
+    line, the JSON tool-schema docstring, indentation, and (via create_file) the
+    `@mcp.tool()` wrapper. This removes the failure mode where the model returns
+    a tool-schema object in place of runnable Python source.
+    """
+
+    def synthesize(self, suggested_func, library, tasks, failure_context=None):
+        system_prompt = '''
+You are implementing a new composite tool for a Python MCP server used by an LLM agent.
+You are given:
+- A proposed function (its intended name and purpose).
+- The library of base tools already available (names and parameters). These base tools are
+  ordinary Python functions already in scope; your body may call them directly by name.
+- Example task conversations (and, when present, an analysis of WHY the agent failed the
+  task). When a failure analysis is given, implement the tool so it directly addresses that
+  failure mode - i.e. so a single call returns exactly what the agent needed but failed to get.
+
+Write the IMPLEMENTATION of the proposed function and output a STRICT JSON object with exactly:
+{
+  "description": "<concise free-text description of what the function does>",
+  "parameters": {
+    "type": "object",
+    "properties": { "<arg_name>": {"type": "string", "description": "<desc>"} },
+    "required": ["<arg_name>"]
+  },
+  "body": "<Python statements for the function body ONLY>"
+}
+
+Hard rules for "body":
+- Do NOT include the `def` line, decorators, or a docstring. Only the statements inside the function.
+- Every parameter is passed as a string by the agent. Typecast inside the body as needed
+  (e.g. `import json; ids = json.loads(ids)` for a list, `n = int(n)` for a number).
+- Do not use type hints.
+- Call base tools by their exact names. Do not invent tools that are not in the library.
+- Return a JSON-serializable result. On bad input, `return {"error": "<message>"}` rather than raising.
+- Write the statements at the left margin (no leading indentation); they will be indented on assembly.
+- Each property name in "parameters" must be a valid Python identifier matching a parameter you use.
+'''
+        user_message = (
+            f"Proposed function: {json.dumps(suggested_func)}\n\n"
+            "Base tool library:\n" + "\n".join(str(t) for t in library) + "\n\n"
+            "Example tasks:\n" + "\n".join(f"Conversation: {t.get('traj')}" for t in tasks)
+        )
+        if failure_context:
+            user_message += f"\n\nFailure analysis (the tool must address this):\n{failure_context}"
+        response = gen_completion(
+            model=self.model_name,
+            custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            response_format="json_object",
+        )
+        msg = model_dump(response.choices[0].message)
+        return json.loads(msg["content"].strip())
+
+    def correct_body(self, library, current_source, failed_trajectory, history):
+        system_prompt = '''
+You previously implemented a composite tool, but running it on a task produced an error.
+Fix ONLY the function body so the error no longer occurs. Most errors are argument parsing
+(the agent passed a string where a list/number was expected) or calling a base tool incorrectly.
+Keep the same behavior otherwise. Output a STRICT JSON object:
+{
+  "explanation": "<what was wrong and how you fixed it>",
+  "body": "<corrected Python statements for the function body ONLY, no def line, no docstring>"
+}
+Rules: parameters arrive as strings (typecast inside); no type hints; call base tools by name;
+return {"error": "<message>"} on bad input; write statements at the left margin (no leading indent).
+'''
+        user_message = (
+            "Base tool library:\n" + "\n".join(str(t) for t in library) + "\n\n"
+            f"Current function source:\n{current_source}\n\n"
+            f"Failed trajectory:\n{failed_trajectory}"
+        )
+        messages = (
+            [{"role": "system", "content": system_prompt}]
+            + (history or [])
+            + [{"role": "user", "content": user_message}]
+        )
+        response = gen_completion(
+            model=self.model_name,
+            custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
+            messages=messages,
+            response_format="json_object",
+        )
+        msg = model_dump(response.choices[0].message)
+        parsed = json.loads(msg["content"].strip())
+        return parsed["body"], parsed.get("explanation", "")
+
+
+def _build_tool_schema(name, description, parameters):
+    """Build the canonical tool-schema dict that becomes the function docstring."""
+    if not isinstance(parameters, dict):
+        parameters = {}
+    props = parameters.get("properties", {}) or {}
+    required = parameters.get("required")
+    if required is None:
+        required = list(props.keys())
+    return {
+        "type": "function",
+        "function": {
+            "name": name,
+            "description": description or "",
+            "parameters": {"type": "object", "properties": props, "required": required},
+        },
+    }
+
+
+def _assemble_function_source(name, schema, param_names, body):
+    """Deterministically assemble runnable Python: def + JSON-schema docstring + body."""
+    doc = json.dumps(schema, indent=2)
+    sig = ", ".join(param_names)
+    body = (body or "").strip("\n")
+    if not body.strip():
+        body = 'return {"error": "not implemented"}'
+    indented_body = textwrap.indent(body, "    ")
+    return f'def {name}({sig}):\n    """\n{doc}\n    """\n{indented_body}\n'
+
+
+def _is_valid_function_source(source):
+    """Source must parse AND its docstring must be the JSON tool-schema."""
+    if not isinstance(source, str):
+        return False
+    try:
+        ast.parse(source)
+    except SyntaxError:
+        return False
+    doc = extract_docstring_from_function_string(source)
+    return is_docstring_json(doc)
+
+
+def _parse_function_source(source):
+    """Recover (name, param_names, schema, body) from an assembled function source."""
+    tree = ast.parse(source)
+    fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef))
+    name = fn.name
+    params = [a.arg for a in fn.args.args]
+    doc = ast.get_docstring(fn)
+    schema = json.loads(doc) if doc else None
+    has_doc = bool(fn.body) and isinstance(fn.body[0], ast.Expr) and isinstance(
+        getattr(fn.body[0], "value", None), ast.Constant
+    )
+    body_nodes = fn.body[1:] if has_doc else fn.body
+    body = "\n".join(ast.unparse(n) for n in body_nodes)
+    return name, params, schema, body
+
+
 def correct_func_from_traj(old_library, new_func, new_trajectory, new_func_def_history):
-    agent = FuncCorrectorFromTrajectories()
-    return agent.correct_function(old_library, new_func, new_trajectory, new_func_def_history)
+    """Re-synthesize only the body of an existing tool to fix a failing trajectory.
+
+    Name, signature, and JSON-schema docstring are preserved deterministically; the
+    model supplies only the corrected body. Returns (source, explanation).
+    """
+    synth_agent = FunctionSynthesisAgent()
+    try:
+        name, param_names, schema, _ = _parse_function_source(new_func)
+    except Exception:
+        return new_func, "Could not parse prior function source; left unchanged."
+    body, explanation = synth_agent.correct_body(
+        old_library, new_func, new_trajectory, new_func_def_history
+    )
+    source = _assemble_function_source(name, schema, param_names, body)
+    if not _is_valid_function_source(source):
+        return new_func, explanation
+    return source, explanation
 
 
 def get_new_func(tasks, old_library, verbose=True):
-    ####### AGENTS #######
-    lib_gen_agent = FunctionSuggestionAgent()
-    lib_ranker_agent = LibRankerAgent()
-    func_def_agent = FuncDefinitionAgent()
-    doc_string_generator = DocStringGenerator()
-    func_corrector_agent = FuncCorrector()
-    
-    suggested_func = lib_gen_agent.suggest_funcs(tasks, old_library)
-    # print(suggested_funcs)
-    # if len(suggested_funcs) > 1:
-    #     rank = lib_ranker_agent.rank_funcs(suggested_funcs)
-    #     func_name = rank.splitlines()[0].strip()
-    #     suggested_func = None
-    #     for func in suggested_funcs:
-    #         if func['name'] == func_name:
-    #             suggested_func = func
-    #             break
-    #     if suggested_func is None:
-    #         print(colored("Function not found", 'red'))
-    #         for func in suggested_funcs:
-    #             print(colored(func['name'], 'red'))
-    #         return
-    # else:
-    #     suggested_func = suggested_funcs[0]
-    
-    if verbose:
-        print(colored(f"Suggested function name: {suggested_func['name']}", 'blue'))
-        
-    
-    new_func = func_def_agent.define_func(old_library, suggested_func, tasks)
+    """Propose and deterministically assemble a new composite tool.
 
-    gen_flag = False
-    while not gen_flag:
-        new_func = doc_string_generator.update_docstring(new_func)
-        doc = extract_docstring_from_function_string(new_func)
-        if is_docstring_json(doc):
-            gen_flag = True
-        else:
-            gen_flag = True
-    if verbose:
-        print(colored(f'Proposed function definition:\n{new_func}', 'yellow'))
+    Returns (function_name, source) where source is a runnable `def` whose docstring
+    is the JSON tool-schema. Returns (name, None) if synthesis cannot be validated.
+    """
+    suggest_agent = FunctionSuggestionAgent()
+    synth_agent = FunctionSynthesisAgent()
 
-    gen_flag = False
-    while not gen_flag:
-        new_func = func_corrector_agent.correct_function(new_func)
-        doc = extract_docstring_from_function_string(new_func)
-        if is_docstring_json(doc):
-            gen_flag = True
-        else:
-            gen_flag = True
+    suggested_func = suggest_agent.suggest_funcs(tasks, old_library)
+    name = suggested_func["name"]
     if verbose:
-        print(colored(f'Corrected function definition:\n{new_func}', 'green'))
+        print(colored(f"Suggested function name: {name}", "blue"))
 
-    return suggested_func['name'], new_func
+    for attempt in range(3):
+        try:
+            impl = synth_agent.synthesize(suggested_func, old_library, tasks)
+        except Exception as e:
+            if verbose:
+                print(colored(f"Attempt {attempt + 1}: synthesis call failed: {e}", "yellow"))
+            continue
+        description = impl.get("description") or suggested_func.get("description", "")
+        parameters = impl.get("parameters", {})
+        body = impl.get("body", "")
+        props = parameters.get("properties", {}) if isinstance(parameters, dict) else {}
+        param_names = [p for p in props.keys() if isinstance(p, str) and p.isidentifier()]
+        schema = _build_tool_schema(name, description, parameters)
+        source = _assemble_function_source(name, schema, param_names, body)
+        if _is_valid_function_source(source):
+            if verbose:
+                print(colored(f"Synthesized function definition:\n{source}", "green"))
+            return name, source
+        if verbose:
+            print(colored(f"Attempt {attempt + 1}: invalid synthesis, retrying", "yellow"))
+    return name, None
+
+
+class FailureFunctionSuggestionAgent(LLMAgent):
+    """Propose a composite tool that targets a specific task FAILURE.
+
+    Unlike FunctionSuggestionAgent (which mines patterns from solved trajectories),
+    this conditions on a failed trajectory plus a why-it-failed analysis, so the
+    proposed tool aims to turn that failure into a success.
+    """
+
+    def suggest_from_failure(self, failed_trajectory, failure_reason, library):
+        system_prompt = '''
+You are an expert at improving an LLM agent's tool library by learning from its FAILURES.
+You are given: a conversation where the agent FAILED a task, an analysis of WHY it failed,
+and the current library of base tools. Propose ONE new high-level composite tool that, had it
+existed, would most plausibly have let the agent avoid this failure (e.g. by returning the exact
+information it needed in one call, or by enforcing a step it skipped/got wrong).
+Output ONLY strict JSON:
+{ "name": "<snake_case_name>", "arguments": ["<arg>", ...], "description": "<what it does and how it fixes the failure>" }
+'''
+        user_message = (
+            f"Failed conversation:\n{failed_trajectory}\n\n"
+            f"Reason for failure:\n{failure_reason}\n\n"
+            "Current base tool library:\n" + "\n".join(str(t) for t in library)
+        )
+        response = gen_completion(
+            model=self.model_name,
+            custom_llm_provider=os.environ.get("LIBGEN_PROVIDER", "openai"),
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            response_format="json_object",
+        )
+        msg = model_dump(response.choices[0].message)
+        return json.loads(msg["content"].strip())
+
+
+def get_new_func_from_failure(failed_trajectory, failure_reason, old_library, verbose=True):
+    """Failure-driven deterministic generation.
+
+    Propose a tool targeting the failure, then synthesize runnable source for it via
+    the same deterministic assembly + validation as get_new_func. The failure analysis
+    is threaded into synthesis so the body addresses the failure mode directly.
+    Returns (name, source) or (name, None) if synthesis can't be validated.
+    """
+    suggest_agent = FailureFunctionSuggestionAgent()
+    synth_agent = FunctionSynthesisAgent()
+
+    suggested_func = suggest_agent.suggest_from_failure(failed_trajectory, failure_reason, old_library)
+    name = suggested_func["name"]
+    if verbose:
+        print(colored(f"[failure-driven] suggested: {name}", "blue"))
+
+    failure_context = f"Why the agent failed: {failure_reason}"
+    pseudo_tasks = [{"traj": failed_trajectory}]
+    for attempt in range(3):
+        try:
+            impl = synth_agent.synthesize(suggested_func, old_library, pseudo_tasks, failure_context=failure_context)
+        except Exception as e:
+            if verbose:
+                print(colored(f"Attempt {attempt + 1}: synthesis call failed: {e}", "yellow"))
+            continue
+        description = impl.get("description") or suggested_func.get("description", "")
+        parameters = impl.get("parameters", {})
+        body = impl.get("body", "")
+        props = parameters.get("properties", {}) if isinstance(parameters, dict) else {}
+        param_names = [p for p in props.keys() if isinstance(p, str) and p.isidentifier()]
+        schema = _build_tool_schema(name, description, parameters)
+        source = _assemble_function_source(name, schema, param_names, body)
+        if _is_valid_function_source(source):
+            if verbose:
+                print(colored(f"[failure-driven] synthesized {name}", "green"))
+            return name, source
+        if verbose:
+            print(colored(f"Attempt {attempt + 1}: invalid synthesis, retrying", "yellow"))
+    return name, None

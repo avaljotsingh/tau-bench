@@ -10,6 +10,18 @@ import json
 import time
 from tau_bench.globals import *
 from litellm import completion as llm_completion
+from azure.core.exceptions import ServiceRequestError, ServiceResponseError, ClientAuthenticationError
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
+
+# Transient TRAPI/network failures (connection aborted, read timeout, DNS
+# getaddrinfo failures) surface as ServiceRequestError / ServiceResponseError
+# (ServiceResponseTimeoutError subclasses the latter). Retry these with backoff
+# so a momentary blip doesn't kill a multi-hour run. HttpResponseError (4xx/5xx,
+# e.g. a bad-request 400) is intentionally NOT retried.
+# ClientAuthenticationError covers mid-run token expiry (~1h az/TRAPI token TTL): retrying
+# re-calls credential.get_token(), minting a fresh token as long as the az session is valid,
+# so a long run self-heals instead of crashing.
+_RETRYABLE_TRAPI_ERRORS = (ServiceRequestError, ServiceResponseError, ClientAuthenticationError)
 
 credential = ChainedTokenCredential(
     AzureCliCredential(),
@@ -41,10 +53,12 @@ scopes = ["api://trapi/.default"]
 # instance = "redmond/interactive/openai" #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
 # endpoint = f'https://trapi.research.microsoft.com/{instance}/deployments/'+deployment_name
 
-api_version = '2025-03-01-preview'  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
-model_name = 'gpt-4o'  # Ensure this is a valid model name
-model_version = '2024-11-20'  # Ensure this is a valid model version
-deployment_name = "gpt-4o_2024-11-20" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
+# Model/deployment are driven by the TRAPI_* env vars set by the entrypoints
+# (run.py / libgen_experiment.py), defaulting to the gpt-5 deployment.
+api_version = os.environ.get("TRAPI_API_VERSION", '2025-03-01-preview')  # Ensure this is a valid API version see: https://learn.microsoft.com/en-us/azure/ai-services/openai/api-version-deprecation#latest-ga-api-release
+model_name = os.environ.get("TRAPI_MODEL_NAME", 'gpt-5')  # Ensure this is a valid model name
+model_version = os.environ.get("TRAPI_MODEL_VERSION", '2024-11-20')  # Ensure this is a valid model version
+deployment_name = os.environ.get("TRAPI_DEPLOYMENT_NAME", "gpt-5_2025-08-07") #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
 
 
 
@@ -53,7 +67,7 @@ deployment_name = "gpt-4o_2024-11-20" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_na
 # model_name = 'gpt-4.1'  # Ensure this is a valid model name
 # model_version = '2025-04-14'  # Ensure this is a valid model version
 # deployment_name = "gpt-4.1_2025-04-14" #re.sub(r'[^a-zA-Z0-9-_]', '', f'{model_name}_{model_version}')  # If your Endpoint doesn't have harmonized deployment names, you can use the deployment name directly: see: https://aka.ms/trapi/models
-instance = "redmond/interactive/openai" #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
+instance = os.environ.get("TRAPI_INSTANCE", "redmond/interactive/openai") #'gcr/shared/openai' # See https://aka.ms/trapi/models for the instance name
 endpoint = f'https://trapi.research.microsoft.com/{instance}/deployments/'+deployment_name
 
 client = ChatCompletionsClient(
@@ -133,6 +147,7 @@ def completion(*args, **kwargs):
         (provider in ("openai", "openai_compatible")) or
         (base_url is not None)
     )
+    use_openai_compatible = False
 
     if use_openai_compatible:
         # Ensure tool calling occurs when tools are provided
@@ -157,8 +172,58 @@ def completion(*args, **kwargs):
     sig = inspect.signature(client.complete)
     allowed_params = sig.parameters
     filtered_kwargs = {k: v for k, v in kwargs.items() if k in allowed_params}
+    # gpt-5 / reasoning deployments (o1, o3, gpt-5*) only accept the default
+    # temperature (1). The tau-bench agents pass 0.1/0.2, which 400s; drop the
+    # param for these models so the deployment default is used.
+    _reasoning_model = any(tok in deployment_name.lower() for tok in ("gpt-5", "o1", "o3", "o4"))
+    if _reasoning_model and "temperature" in filtered_kwargs:
+        filtered_kwargs.pop("temperature", None)
+
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(6),
+        wait=wait_exponential(multiplier=2, min=2, max=60),
+        retry=retry_if_exception_type(_RETRYABLE_TRAPI_ERRORS),
+    )
+    def _complete_with_retry():
+        return client.complete(*args, **filtered_kwargs)
+
     start_time = time.time()
-    res = client.complete(*args, **filtered_kwargs)
+    res = _complete_with_retry()
     end_time = time.time()
     llm_time.record_time(end_time - start_time)
     return res
+
+
+# ---------------------------------------------------------------------------
+# Separate STRONG-model client for tool GENERATION, decoupled from the agent.
+# The agent's deployment is env-driven and may be a WEAK model (to create
+# failures + headroom). Tools should still be designed by a strong model, so
+# lib_gen routes its calls here. Defaults to gpt-5; override via LIBGEN_GEN_*.
+# ---------------------------------------------------------------------------
+gen_deployment_name = os.environ.get("LIBGEN_GEN_DEPLOYMENT", "gpt-5_2025-08-07")
+gen_instance = os.environ.get("LIBGEN_GEN_INSTANCE", instance)
+gen_api_version = os.environ.get("LIBGEN_GEN_API_VERSION", api_version)
+gen_endpoint = f'https://trapi.research.microsoft.com/{gen_instance}/deployments/' + gen_deployment_name
+gen_client = ChatCompletionsClient(
+    endpoint=gen_endpoint, credential=credential, credential_scopes=scopes, api_version=gen_api_version,
+)
+
+
+def gen_completion(*args, **kwargs):
+    """Chat completion via the STRONG generation model (separate from the agent model)."""
+    sig = inspect.signature(gen_client.complete)
+    filtered = {k: v for k, v in kwargs.items() if k in sig.parameters}
+    if any(tok in gen_deployment_name.lower() for tok in ("gpt-5", "o1", "o3", "o4")):
+        filtered.pop("temperature", None)
+
+    @retry(
+        reraise=True,
+        stop=stop_after_attempt(6),
+        wait=wait_exponential(multiplier=2, min=2, max=60),
+        retry=retry_if_exception_type(_RETRYABLE_TRAPI_ERRORS),
+    )
+    def _c():
+        return gen_client.complete(*args, **filtered)
+
+    return _c()

@@ -1,0 +1,25 @@
+{
+  "tools": [
+    "find_new_item_ids_by_option_changes",
+    "auto_greet_and_collect_intent",
+    "bootstrap_user_intent",
+    "request_user_intent_if_missing",
+    "prompt_for_user_intent",
+    "clarify_missing_instruction",
+    "ensure_user_intent",
+    "collect_user_intent"
+  ],
+  "fail_ids": [
+    24,
+    26,
+    28,
+    35,
+    43,
+    44,
+    45,
+    46,
+    47,
+    48,
+    49
+  ]
+}

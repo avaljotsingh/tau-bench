@@ -1,36 +1,79 @@
-[2025-12-11 13:18:06] Detected latest results file: results/tool-calling-deepseek-coder-1.3b-instruct-0.1_range_0--1_user-deepseek-coder-1.3b-instruct-llm_1207070713.json
-[2025-12-11 14:09:13] Detected latest results file: results/tool-calling-deepseek-coder-1.3b-instruct-0.1_range_0--1_user-deepseek-coder-1.3b-instruct-llm_1207070713.json
-[2025-12-11 14:13:18] Detected latest results file: results/tool-calling-deepseek-coder-1.3b-instruct-0.1_range_0--1_user-deepseek-coder-1.3b-instruct-llm_1207070713.json
-[2025-12-11 14:13:18] Iteration 1
-[2025-12-11 14:13:18] Running generation phase
-[2025-12-11 14:13:18] Generation iteration 1
-[2025-12-11 14:13:56] Failed to generate a valid function definition.
-[2025-12-11 14:13:56] Generation iteration 2
-[2025-12-11 14:14:31] Failed to generate a valid function definition.
-[2025-12-11 14:14:31] Generation iteration 3
-[2025-12-11 14:15:09] Failed to generate a valid function definition.
-[2025-12-11 14:15:09] Generation produced no valid functions; continuing to next iteration
-[2025-12-11 14:15:09] Iteration 2
-[2025-12-11 14:15:09] No more train tasks to process in generation phase.
-[2025-12-11 14:15:09] Running test phase
-[2025-12-11 14:20:30] Detected latest results file: results/tool-calling-deepseek-coder-1.3b-instruct-0.1_range_0--1_user-deepseek-coder-1.3b-instruct-llm_1207070713.json
-[2025-12-11 14:20:30] Iteration 1
-[2025-12-11 14:20:30] Running generation phase
-[2025-12-11 14:20:30] Generation iteration 1
-[2025-12-11 14:21:02] Failed to generate a valid function definition.
-[2025-12-11 14:21:02] Generation iteration 2
-[2025-12-11 14:21:33] Failed to generate a valid function definition.
-[2025-12-11 14:21:33] Generation iteration 3
-[2025-12-11 14:22:05] Failed to generate a valid function definition.
-[2025-12-11 14:22:05] Generation produced no valid functions; continuing to next iteration
-[2025-12-11 14:22:05] Iteration 2
-[2025-12-11 14:22:05] No more train tasks to process in generation phase.
-[2025-12-11 14:22:05] Running test phase
-[2025-12-12 07:28:30] Detected latest results file: results/tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1211143257.json
-[2025-12-12 07:28:30] Iteration 1
-[2025-12-12 07:28:30] Running generation phase
-[2025-12-12 07:28:30] Generation iteration 1
-[2025-12-12 07:32:47] Detected latest results file: results/tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1211143257.json
-[2025-12-12 07:32:47] Iteration 1
-[2025-12-12 07:32:47] Running generation phase
-[2025-12-12 07:32:47] Generation iteration 1
+[2026-06-22 23:38:47] Using explicit input tasks file: results/tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1201190015.json
+[2026-06-22 23:38:47] Iteration 1
+[2026-06-22 23:38:47] Running generation phase
+[2026-06-22 23:38:47] Generation iteration 1
+[2026-06-22 23:41:43] New function proposed: list_user_orders
+[2026-06-22 23:41:43] Trajectory check on tasks [5, 6, 7, 8, 9]
+[2026-06-22 23:51:32] Wrong trajectory detected on task 9
+[2026-06-22 23:54:26] Corrected proposed function. Explanation: The tool framework treated status, start_date, and end_date as required because they are parameters without defaults in the function signature. When the agent called the tool with only user_id, limit, and include_items, validation failed before the function could run. Since we can’t change the def line, the fix is to make the body robust to how arguments arrive by supporting a single-dict payload fallback and by defaulting any missing optional parameters. At the top of the body, if the first argument is a dict, we extract user_id and the optional fields from it. We also ensure optional parameters are safely defaulted when they are None or empty. Additionally, we improved payment method cross-reference to handle when user payment methods are provided as a dict rather than a list.
+[2026-06-22 23:54:26] Trajectory check on tasks [5, 6, 7, 8, 9]
+[2026-06-23 00:07:54] Wrong trajectory detected on task 6
+[2026-06-23 00:10:28] Corrected proposed function. Explanation: The tool runner validated all function parameters as required because the function signature lists them without defaults. Calls that omitted optional fields (status, start_date, end_date) failed validation before the body could run. To make the tool robust, the body now normalizes incoming arguments when they arrive as a single bundled payload: it accepts a dict in any of the first two parameters, or a JSON string in user_id, and extracts fields from it. It also supplies safe defaults for any missing optional fields before use. Additionally, it normalizes payment method structures that may be dicts. This allows callers to pass only user_id or any subset of optional filters without causing validation failures.
+[2026-06-23 00:10:28] Generation iteration 2
+[2026-06-23 00:13:00] New function proposed: list_user_orders
+[2026-06-23 00:13:00] Trajectory check on tasks [5, 6, 7, 8, 9]
+[2026-06-23 00:22:49] Wrong trajectory detected on task 5
+[2026-06-23 00:25:36] Corrected proposed function. Explanation: The tool was called with only user_id, but because the Python signature lists status and limit as parameters without defaults, the runner validated them as required and failed. While we cannot change the signature, we can make the body robust by: (1) safely defaulting status and limit when they’re not supplied (using locals checks) and (2) also supporting the case where a single dict of params is passed as the first argument. Additionally, base tools may return JSON strings; I added parsing so the function consistently works with dicts.
+[2026-06-23 00:25:36] Trajectory check on tasks [5, 6, 7, 8, 9]
+[2026-06-23 00:36:18] Wrong trajectory detected on task 5
+[2026-06-23 00:38:00] Corrected proposed function. Explanation: The earlier error occurred because the tool runner sometimes invokes tools with only the required argument (user_id), while the Python signature has three positional parameters. Some runners also pass a single dict as the first argument. To make the function resilient without changing its signature, the body now: (1) accepts a dict as the first argument and extracts user_id/status/limit; (2) treats status and limit as optional by safely defaulting them; (3) parses base tool JSON string responses to dicts; (4) ensures all base tool calls receive strings. This avoids validation failures when status and limit aren’t provided.
+[2026-06-23 00:38:00] Generation iteration 3
+[2026-06-23 00:44:33] New function proposed: resolve_user_id
+[2026-06-23 00:44:33] Trajectory check on tasks [5, 6, 7, 8, 9]
+[2026-06-23 00:54:36] Wrong trajectory detected on task 5
+[2026-06-23 00:56:46] Corrected proposed function. Explanation: The failure occurred when the composite tool was invoked with only the email field. Many orchestrators derive required parameters from the Python signature, so first_name, last_name, and zip were considered required and the call failed validation before the body ran. While we cannot change the function signature, we can make the body robust to common calling patterns: (1) handle the case where all arguments are bundled inside the 'email' parameter as a JSON string, and (2) treat missing/empty parameters safely. I also fixed user id extraction to avoid mistakenly treating error strings from base tools as valid user ids.
+[2026-06-23 00:56:46] Trajectory check on tasks [5, 6, 7, 8, 9]
+[2026-06-23 01:06:30] Wrong trajectory detected on task 5
+[2026-06-23 01:08:17] Corrected proposed function. Explanation: The tool was being invoked with only the email field, but the orchestrator validated the function signature and treated first_name, last_name, and zip as required (since the signature has no defaults). While we cannot change the signature, we can make the body robust to common calling patterns by parsing a JSON-encoded payload if any of the parameters contains it (not just email), and then proceed with email-first lookup. I also made the user-id extraction safer against error strings and JSON-encoded responses. This allows successful resolution when only an email is provided and avoids misinterpreting error messages as user IDs.
+[2026-06-23 01:08:17] Generation produced no valid functions; continuing to next iteration
+[2026-06-23 01:08:17] Iteration 2
+[2026-06-23 01:08:17] Running generation phase
+[2026-06-23 01:08:17] Generation iteration 1
+[2026-06-23 01:10:53] New function proposed: get_order_payment_details
+[2026-06-23 01:10:53] Trajectory check on tasks [10, 11, 12, 13, 14]
+[2026-06-23 01:19:18] Generation iteration 2
+[2026-06-23 01:22:18] New function proposed: list_user_orders
+[2026-06-23 01:22:18] Trajectory check on tasks [10, 11, 12, 13, 14]
+[2026-06-23 01:32:13] Wrong trajectory detected on task 10
+[2026-06-23 01:33:39] Corrected proposed function. Explanation: The base tools (get_user_details, get_order_details, get_item_details, get_order_payment_details) return JSON-encoded strings, but the function treated them as dictionaries. As a result, it failed to locate the user's orders (and later details), yielding empty results. I added a safe JSON parsing helper and applied it to all base tool responses, and also added a fallback to compute totals from item prices when not provided. This preserves existing behavior while fixing the argument/format handling.
+[2026-06-23 01:33:39] Trajectory check on tasks [10, 11, 12, 13, 14]
+[2026-06-23 01:43:39] Wrong trajectory detected on task 10
+[2026-06-23 01:45:20] Corrected proposed function. Explanation: The base tools (get_user_details, get_order_details, get_item_details, get_order_payment_details) return JSON-encoded strings, but the original function treated them as dictionaries. This caused failures to locate the user's orders and details, resulting in empty outputs and downstream errors. I added a safe JSON parsing helper and applied it to all base tool responses. I also added minor robustness (fallback total from item prices, sanitized order_id with leading '#'). The function now correctly handles string inputs for parameters and JSON string responses from base tools.
+[2026-06-23 01:45:20] Generation iteration 3
+[2026-06-23 01:52:47] New function proposed: list_order_items
+[2026-06-23 01:52:47] Trajectory check on tasks [10, 11, 12, 13, 14]
+[2026-06-23 02:01:23] Running validation phase
+[2026-06-23 02:23:47] No functions passed validation; continuing to next iteration
+[2026-06-23 02:23:47] Iteration 3
+[2026-06-23 02:23:47] Running generation phase
+[2026-06-23 02:23:47] Generation iteration 1
+[2026-06-23 02:25:54] New function proposed: list_product_variants
+[2026-06-23 02:25:54] Trajectory check on tasks [15, 16, 17, 18, 19]
+[2026-06-23 02:33:31] Wrong trajectory detected on task 15
+[2026-06-23 02:34:14] Corrected proposed function. Explanation: The base tools return JSON-encoded strings, but the function assumed they returned Python dicts. This caused the check `isinstance(p, dict)` to fail and return "Unexpected response format from get_product_details". I fixed this by JSON-parsing string responses from get_product_details and get_item_details using json.loads, and only erroring if parsing fails. Behavior otherwise remains unchanged.
+[2026-06-23 02:34:15] Trajectory check on tasks [15, 16, 17, 18, 19]
+[2026-06-23 02:40:25] Generation iteration 2
+[2026-06-23 02:48:28] New function proposed: list_user_orders
+[2026-06-23 02:48:28] Trajectory check on tasks [15, 16, 17, 18, 19]
+[2026-06-23 02:54:44] Wrong trajectory detected on task 15
+[2026-06-23 02:56:12] Corrected proposed function. Explanation: The base tools (get_user_details, get_order_details, list_order_items) return JSON strings, but the function assumed dicts and errored with 'Unexpected response from get_user_details'. I fixed this by detecting string responses and json.loads() parsing them into dicts before use. I applied the same parsing to get_order_details and list_order_items. No other behavior was changed.
+[2026-06-23 02:56:12] Trajectory check on tasks [15, 16, 17, 18, 19]
+[2026-06-23 03:03:12] Wrong trajectory detected on task 19
+[2026-06-23 03:06:06] Corrected proposed function. Explanation: The base tools (get_user_details, get_order_details, list_order_items) return JSON strings, but the function previously assumed dicts. This caused 'Unexpected response from get_user_details' when the tool returned a string. I fixed it by detecting string responses and parsing them with json.loads before use for all three tool calls. The rest of the behavior remains the same, and optional parameters are handled as empty/None without requiring them.
+[2026-06-23 03:06:06] Generation iteration 3
+[2026-06-23 03:15:34] New function proposed: list_user_orders
+[2026-06-23 03:15:34] Trajectory check on tasks [15, 16, 17, 18, 19]
+[2026-06-23 03:21:03] Wrong trajectory detected on task 15
+[2026-06-23 03:23:43] Corrected proposed function. Explanation: The initial failure showed a Pydantic validation error when optional arguments (status, since, until) were omitted in a tool call. While we cannot change the function signature, two issues in the body made the function brittle: (1) many base tools return JSON strings, but the code treated them as dicts/lists, causing downstream logic to silently fail (e.g., always returning zero orders), and (2) some runtimes may pass a single payload dict as the first argument, leading to missing optional values. I fixed this by: (a) adding a compatibility shim to unpack a dict payload passed via the user_id parameter into the expected fields, and (b) parsing JSON strings returned by base tools (get_user_details, get_order_details, list_order_items) into Python objects before processing. These changes keep behavior the same, handle optional parameters robustly, and prevent errors due to unparsed JSON and argument shape inconsistencies.
+[2026-06-23 03:23:43] Trajectory check on tasks [15, 16, 17, 18, 19]
+[2026-06-23 03:29:33] Wrong trajectory detected on task 15
+[2026-06-23 03:31:17] Corrected proposed function. Explanation: The initial error in the logs came from the tool wrapper treating status/since/until as required because they aren’t given defaults in the function signature. While we can’t change the signature, once those fields were supplied, the body still returned zero orders because date filters (since/until) were applied even though get_order_details doesn’t return a placed_at/created_at/date. The code was excluding all orders when placed_at couldn’t be parsed. I fixed this by allowing orders with missing placed_at to pass date filters (only filter when a parsable date exists). I also keep the previously added compatibility shim (payload dict unpack) and JSON parsing of base tool responses so calls remain robust.
+[2026-06-23 03:31:17] Running validation phase
+[2026-06-23 03:54:27] No functions passed validation; continuing to next iteration
+[2026-06-23 03:54:27] Iteration 4
+[2026-06-23 03:54:27] Running generation phase
+[2026-06-23 03:54:27] Generation iteration 1
+[2026-06-23 04:04:25] Failed to generate a valid function definition.
+[2026-06-23 04:04:25] Generation iteration 2
+[2026-06-23 04:12:45] New function proposed: calculate_item_price_difference
+[2026-06-23 04:12:45] Trajectory check on tasks [20, 21, 22, 23, 24]

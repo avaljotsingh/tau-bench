@@ -4,7 +4,7 @@
     "env": "retail",
     "input_tasks": {
       "mode": "latest_for_env",
-      "explicit_path": null,
+      "explicit_path": "results/tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1201190015.json",
       "logs_dir": "results",
       "filename_glob": "*.json",
       "validate_env_in_file": true
@@ -12,7 +12,7 @@
     "library": {
       "mode": "base_library",
       "explicit_path": null,
-      "base_library_path": "/home/madhav/ext-madhav/tau-bench/mcp/retail_server.py"
+      "base_library_path": "mcp/retail_server.py"
     },
     "splits": {
       "train_ids": [

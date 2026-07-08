@@ -39,3 +39,85 @@
 [2025-12-12 08:05:27] Running generation phase
 [2025-12-12 08:05:27] Generation iteration 1
 [2025-12-12 13:40:11] Detected latest results file: results/airline/tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:24:20] Detected latest results file: results/airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:44:39] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:45:28] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:45:28] Iteration 1
+[2025-12-17 15:45:28] Running generation phase
+[2025-12-17 15:45:28] Generation iteration 1
+[2025-12-17 15:46:01] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:46:01] Iteration 1
+[2025-12-17 15:46:01] Running generation phase
+[2025-12-17 15:46:01] Generation iteration 1
+[2025-12-17 15:47:31] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:47:31] Iteration 1
+[2025-12-17 15:47:31] Running generation phase
+[2025-12-17 15:47:31] Generation iteration 1
+[2025-12-17 15:55:53] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:55:53] Iteration 1
+[2025-12-17 15:55:53] Running generation phase
+[2025-12-17 15:55:53] Generation iteration 1
+[2025-12-17 15:58:07] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 15:58:07] Iteration 1
+[2025-12-17 15:58:07] Running generation phase
+[2025-12-17 15:58:07] Generation iteration 1
+[2025-12-17 16:02:59] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 16:02:59] Iteration 1
+[2025-12-17 16:02:59] Running generation phase
+[2025-12-17 16:02:59] Generation iteration 1
+[2025-12-17 16:28:15] Detected latest results file: C:\Users\sbarke\Downloads\tau-bench\results\airline\tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json
+[2025-12-17 16:28:16] Iteration 1
+[2025-12-17 16:28:16] Running generation phase
+[2025-12-17 16:28:16] Generation iteration 1
+[2025-12-17 16:28:56] Failed to generate a valid function definition.
+[2025-12-17 16:28:56] Generation iteration 2
+[2025-12-17 16:31:48] Failed to generate a valid function definition.
+[2025-12-17 16:31:48] Generation iteration 3
+[2025-12-17 16:32:49] Failed to generate a valid function definition.
+[2025-12-17 16:32:49] Generation produced no valid functions; continuing to next iteration
+[2025-12-17 16:32:49] Iteration 2
+[2025-12-17 16:32:49] Running generation phase
+[2025-12-17 16:32:49] Generation iteration 1
+[2025-12-17 16:37:08] Failed to generate a valid function definition.
+[2025-12-17 16:37:08] Generation iteration 2
+[2025-12-17 16:43:17] Failed to generate a valid function definition.
+[2025-12-17 16:43:17] Generation iteration 3
+[2025-12-17 16:44:11] Failed to generate a valid function definition.
+[2025-12-17 16:44:11] Generation produced no valid functions; continuing to next iteration
+[2025-12-17 16:44:11] Iteration 3
+[2025-12-17 16:44:11] Running generation phase
+[2025-12-17 16:44:11] Generation iteration 1
+[2025-12-17 16:45:05] Failed to generate a valid function definition.
+[2025-12-17 16:45:05] Generation iteration 2
+[2025-12-17 16:45:56] Failed to generate a valid function definition.
+[2025-12-17 16:45:56] Generation iteration 3
+[2025-12-17 16:46:57] Failed to generate a valid function definition.
+[2025-12-17 16:46:57] Generation produced no valid functions; continuing to next iteration
+[2025-12-17 16:46:57] Iteration 4
+[2025-12-17 16:46:57] Running generation phase
+[2025-12-17 16:46:57] Generation iteration 1
+[2025-12-17 16:47:45] Failed to generate a valid function definition.
+[2025-12-17 16:47:45] Generation iteration 2
+[2025-12-17 16:48:46] Failed to generate a valid function definition.
+[2025-12-17 16:48:46] Generation iteration 3
+[2025-12-17 16:49:50] Failed to generate a valid function definition.
+[2025-12-17 16:49:50] Generation produced no valid functions; continuing to next iteration
+[2025-12-17 16:49:50] Iteration 5
+[2025-12-17 16:49:50] Running generation phase
+[2025-12-17 16:49:50] Generation iteration 1
+[2025-12-17 16:51:30] Failed to generate a valid function definition.
+[2025-12-17 16:51:30] Generation iteration 2
+[2025-12-17 16:52:55] Failed to generate a valid function definition.
+[2025-12-17 16:52:55] Generation iteration 3
+[2025-12-17 16:54:31] Failed to generate a valid function definition.
+[2025-12-17 16:54:31] Generation produced no valid functions; continuing to next iteration
+[2025-12-17 16:54:31] Iteration 6
+[2025-12-17 16:54:31] Running generation phase
+[2025-12-17 16:54:31] Generation iteration 1
+[2025-12-17 16:55:43] Failed to generate a valid function definition.
+[2025-12-17 16:55:43] Generation iteration 2
+[2025-12-17 16:56:43] Failed to generate a valid function definition.
+[2025-12-17 16:56:43] Generation iteration 3
+[2025-12-17 17:01:14] Failed to generate a valid function definition.
+[2025-12-17 17:01:14] Generation produced no valid functions; continuing to next iteration
+[2025-12-17 17:01:14] Running test phase

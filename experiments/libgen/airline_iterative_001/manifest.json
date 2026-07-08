@@ -5,14 +5,14 @@
     "input_tasks": {
       "mode": "latest_for_env",
       "explicit_path": null,
-      "logs_dir": "results/airline/",
-      "filename_glob": "*.json",
+      "logs_dir": "C:\\Users\\sbarke\\Downloads\\tau-bench\\results\\airline",
+      "filename_glob": "tool-calling-Qwen2.5-7B-Instruct-0.1_range_0--1_user-Qwen2.5-7B-Instruct-llm_1205034445.json",
       "validate_env_in_file": true
     },
     "library": {
       "mode": "base_library",
       "explicit_path": null,
-      "base_library_path": "/home/madhav/ext-madhav/tau-bench/mcp/airline_server.py"
+      "base_library_path": "C:\\Users\\sbarke\\Downloads\\tau-bench\\mcp\\airline_server.py"
     },
     "splits": {
       "train_ids": [

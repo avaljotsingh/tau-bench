@@ -5,6 +5,11 @@ from typing import Any, Dict, List, Tuple
 from tau_bench.types import RunConfig
 from tau_bench.run import run as tau_run
 
+API_VERSION = "2024-12-01-preview"
+DEPLOYMENT_NAME = "gpt-5_2025-08-07"
+INSTANCE = "gcr/shared"
+ENDPOINT = f"https://trapi.research.microsoft.com/{INSTANCE}"
+
 import lib_gen as lib_gen
 from libgen_utils import (
     get_tools,
@@ -185,30 +190,35 @@ class LibGenExperimentRunner:
             open(new_mcp_server, "w").close()
             create_file(mcp_server_before_generation, new_mcp_server, new_func_def)
             found_incorrect_trajectory = False
-            traj_results: List[bool] = []
-            index = -1
-            for j in range(len(task_ids)):
-                task_id = task_ids[j]
-                self.logger.log(f"Trajectory check on task {task_id}")
-                output_file = os.path.join(output_folder, f"train_results_{task_id}.json")
-                rc = self._build_run_config(
-                    task_ids=[task_id],
-                    task_split="train",
-                    mcp_server=new_mcp_server,
-                    ckpt_path=output_file,
-                    new_func=new_func_name,
-                )
-                tau_run(rc)
-                trajectory = load_json(output_file)[0]
+            # Run all trajectory checks for this chunk concurrently, then pick the
+            # FIRST failing trajectory (in task order) to drive correction -- this
+            # preserves the original sequential "correct on first failure" semantics.
+            self.logger.log(f"Trajectory check on tasks {list(task_ids)}")
+            output_file = os.path.join(output_folder, "train_results.json")
+            rc = self._build_run_config(
+                task_ids=list(task_ids),
+                task_split="train",
+                mcp_server=new_mcp_server,
+                ckpt_path=output_file,
+                new_func=new_func_name,
+            )
+            tau_run(rc)
+            trajectories = load_json(output_file)
+            by_id = {t.get("task_id"): t for t in trajectories}
+            new_trajectory = None
+            failing_task_id = None
+            for task_id in task_ids:
+                trajectory = by_id.get(task_id)
+                if trajectory is None:
+                    continue
                 res = Metrics(trajectory, [new_func_name])
-                traj_results.append(res.error_in_func[new_func_name])
-                if traj_results[j] is True:
+                if res.error_in_func[new_func_name] is True:
                     found_incorrect_trajectory = True
-                    index = j
+                    new_trajectory = trajectory
+                    failing_task_id = task_id
                     break
             if found_incorrect_trajectory:
-                self.logger.log(f"Wrong trajectory detected on task {task_ids[index]}")
-                new_trajectory = load_json(os.path.join(output_folder, f"train_results_{task_ids[index]}.json"))[0]
+                self.logger.log(f"Wrong trajectory detected on task {failing_task_id}")
                 improved_func_def, explanation = lib_gen.correct_func_from_traj(
                     old_library, new_func_def, new_trajectory, new_func_def_history
                 )
@@ -234,9 +244,16 @@ class LibGenExperimentRunner:
         new_funcs: Dict[str, str] = {}
         for i in range(num_iterations):
             self.logger.log(f"Generation iteration {i+1}")
-            success, new_func_name, new_func_def = self._generate_func(
-                tasks, task_ids, mcp_server_before_generation, new_mcp_server, output_folder
-            )
+            try:
+                success, new_func_name, new_func_def = self._generate_func(
+                    tasks, task_ids, mcp_server_before_generation, new_mcp_server, output_folder
+                )
+            except Exception as e:
+                # A generation/correction LLM call failed even after retries (e.g. a
+                # prolonged TRAPI outage). Skip this proposal rather than crashing the
+                # whole run; subsequent iterations can still succeed.
+                self.logger.log(f"Generation iteration {i+1} failed with error: {e}; skipping")
+                continue
             if success:
                 # keep only names in temp server for iterative proposals
                 open(mcp_server_before_generation, "w").close()
@@ -259,19 +276,20 @@ class LibGenExperimentRunner:
         output_folder: str,
     ) -> List[str]:
         ensure_dir(output_folder)
-        results: List[Dict[str, Any]] = []
-        for task_id in task_ids:
-            output_file = os.path.join(output_folder, f"validation_results_{task_id}.json")
-            rc = self._build_run_config(
-                task_ids=[task_id],
-                task_split="train",
-                mcp_server=mcp_server,
-                ckpt_path=output_file,
-            )
-            tau_run(rc)
-            trajectory = load_json(output_file)[0]
-            res = Metrics(trajectory, list(new_funcs.keys()))
-            results.append(res.to_dict())
+        # Run all validation tasks in a single tau_run call so they execute
+        # concurrently (max_concurrency) instead of one-at-a-time.
+        output_file = os.path.join(output_folder, "validation_results.json")
+        rc = self._build_run_config(
+            task_ids=list(task_ids),
+            task_split="train",
+            mcp_server=mcp_server,
+            ckpt_path=output_file,
+        )
+        tau_run(rc)
+        trajectories = load_json(output_file)
+        results: List[Dict[str, Any]] = [
+            Metrics(trajectory, list(new_funcs.keys())).to_dict() for trajectory in trajectories
+        ]
         results_file = os.path.join(output_folder, "metric_results.json")
         save_json(results_file, results)
         # consolidate
@@ -300,19 +318,17 @@ class LibGenExperimentRunner:
         output_folder: str,
     ) -> None:
         ensure_dir(output_folder)
-        results: List[Dict[str, Any]] = []
-        # run each task and store combined
-        for task_id in task_ids:
-            output_file = os.path.join(output_folder, f"test_results_{task_id}.json")
-            self.logger.log(f"Test task {task_id}")
-            rc = self._build_run_config(
-                task_ids=[task_id],
-                task_split="test",
-                mcp_server=mcp_server,
-                ckpt_path=output_file,
-            )
-            tau_run(rc)
-            results.extend(load_json(output_file))
+        # Run all test tasks in a single tau_run call so they execute concurrently.
+        self.logger.log(f"Test tasks {list(task_ids)}")
+        output_file = os.path.join(output_folder, "test_results_raw.json")
+        rc = self._build_run_config(
+            task_ids=list(task_ids),
+            task_split="test",
+            mcp_server=mcp_server,
+            ckpt_path=output_file,
+        )
+        tau_run(rc)
+        results: List[Dict[str, Any]] = load_json(output_file)
         save_json(os.path.join(output_folder, "test_results.json"), results)
 
     def run(self) -> None:
@@ -337,6 +353,10 @@ class LibGenExperimentRunner:
         if not mcp_server_before_generation or not os.path.exists(mcp_server_before_generation):
             raise FileNotFoundError("A valid library.base_library_path is required to bootstrap MCP server state")
         # Iterate updates
+        # Default the post-validation server to the base library so the test
+        # phase always has a valid MCP server even if no function is generated
+        # or passes validation (otherwise mcp_after_validation is unbound).
+        mcp_after_validation = mcp_server_before_generation
         iteration = 0
         while iteration < 10:
             for j in range(test_after):
