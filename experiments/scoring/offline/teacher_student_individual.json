@@ -1,0 +1,1703 @@
+[
+  {
+    "tool": "authenticate_user",
+    "S1_S3": {
+      "tool": "authenticate_user",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "authenticate_user",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  },
+  {
+    "tool": "calculate_price_difference",
+    "S1_S3": {
+      "tool": "calculate_price_difference",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "calculate_price_difference",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  },
+  {
+    "tool": "get_order_summary",
+    "S1_S3": {
+      "tool": "get_order_summary",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "get_order_summary",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  },
+  {
+    "tool": "list_user_orders_with_status",
+    "S1_S3": {
+      "tool": "list_user_orders_with_status",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "list_user_orders_with_status",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  },
+  {
+    "tool": "validate_order_action",
+    "S1_S3": {
+      "tool": "validate_order_action",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "validate_order_action",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  },
+  {
+    "tool": "modify_pending_order",
+    "S1_S3": {
+      "tool": "modify_pending_order",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "modify_pending_order",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  },
+  {
+    "tool": "get_order_context",
+    "S1_S3": {
+      "tool": "get_order_context",
+      "gate": "S1+S3",
+      "n_passing_tested": 39,
+      "preserved": 39,
+      "regressions": [],
+      "n_regressions": 0,
+      "S3_pass": true,
+      "per_task": {
+        "0": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "1": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "2": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "3": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "4": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "5": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "6": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "7": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "8": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "9": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "10": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "11": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "12": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "13": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "14": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "15": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "16": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "17": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "18": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "19": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "20": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "21": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "22": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "23": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "25": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "27": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "29": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "30": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "31": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "32": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "33": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "34": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "36": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "37": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "38": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "39": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "40": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "41": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        },
+        "42": {
+          "base_reward": 1.0,
+          "aug_reward": 1.0,
+          "regressed": false
+        }
+      }
+    },
+    "S2": {
+      "tool": "get_order_context",
+      "gate": "S2",
+      "n_failing_tested": 4,
+      "fixes": [],
+      "n_fixes": 0,
+      "per_task": {
+        "24": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "26": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "28": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        },
+        "35": {
+          "agent_replay_reward": 0.0,
+          "gold_replay_reward": 1.0,
+          "fixed": false
+        }
+      }
+    },
+    "S3_pass": true,
+    "regressions": [],
+    "fixes": [],
+    "net": 0,
+    "keep": true
+  }
+]

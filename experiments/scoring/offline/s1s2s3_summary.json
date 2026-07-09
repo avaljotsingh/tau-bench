@@ -1,0 +1,116 @@
+{
+  "experiment": "S1-S3 deterministic scoring pipeline",
+  "description": "Per-tool offline scoring: S3=zero regressions on passing tasks, S2=fixes on failing tasks",
+  "libraries": {
+    "teacher_student": {
+      "survivors": [
+        "authenticate_user",
+        "calculate_price_difference",
+        "get_order_summary",
+        "list_user_orders_with_status",
+        "validate_order_action",
+        "modify_pending_order",
+        "get_order_context"
+      ],
+      "dropped": [],
+      "per_tool": [
+        {
+          "tool": "authenticate_user",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "calculate_price_difference",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "get_order_summary",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "list_user_orders_with_status",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "validate_order_action",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "modify_pending_order",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "get_order_context",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        }
+      ]
+    },
+    "self_improve": {
+      "survivors": [
+        "list_user_orders",
+        "find_product_variant",
+        "calculate_price_difference",
+        "get_order_action_availability",
+        "list_user_actionable_orders"
+      ],
+      "dropped": [],
+      "per_tool": [
+        {
+          "tool": "list_user_orders",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "find_product_variant",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "calculate_price_difference",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "get_order_action_availability",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        },
+        {
+          "tool": "list_user_actionable_orders",
+          "S3_pass": true,
+          "regressions": [],
+          "fixes": [],
+          "net": 0
+        }
+      ]
+    }
+  }
+}
