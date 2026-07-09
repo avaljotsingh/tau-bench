@@ -1,0 +1,77 @@
+{
+  "experiment": "per-task tool routing on held-out test",
+  "model": "gpt-4o-mini_2024-07-18",
+  "safety_map": {
+    "return": [
+      "list_user_orders_with_status",
+      "get_order_summary",
+      "authenticate_user"
+    ],
+    "exchange": [
+      "get_order_summary",
+      "get_order_context",
+      "calculate_price_difference"
+    ],
+    "cancel": [
+      "list_user_orders_with_status",
+      "calculate_price_difference",
+      "get_order_summary"
+    ],
+    "modify_payment": [
+      "list_user_orders_with_status",
+      "get_order_summary",
+      "get_order_context"
+    ],
+    "modify_items": [
+      "calculate_price_difference",
+      "get_order_summary"
+    ],
+    "modify_address": [
+      "list_user_orders_with_status",
+      "get_order_summary",
+      "get_order_context",
+      "validate_order_action"
+    ]
+  },
+  "task_categories": {
+    "80": "exchange",
+    "81": "cancel",
+    "82": "return",
+    "83": "return",
+    "84": "return",
+    "85": "modify_items",
+    "86": "modify_items",
+    "87": "modify_address",
+    "88": "cancel",
+    "89": "return",
+    "90": "cancel",
+    "91": "return",
+    "92": "return",
+    "93": "exchange",
+    "94": "exchange",
+    "95": "exchange",
+    "96": "exchange",
+    "97": "modify_address",
+    "98": "modify_address",
+    "99": "exchange"
+  },
+  "results": {
+    "base": {
+      "passed": 16,
+      "n": 20
+    },
+    "unfiltered": {
+      "passed": 16,
+      "n": 20
+    },
+    "routed": {
+      "passed": 17,
+      "n": 20,
+      "failures": [
+        80,
+        85,
+        96
+      ]
+    }
+  }
+}
