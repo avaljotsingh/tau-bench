@@ -1,0 +1,26 @@
+{
+  "experiment": "gpt-4o step efficiency on held-out test",
+  "model": "gpt-4o_2024-11-20",
+  "task_split": "test",
+  "results": {
+    "gpt4o_base": {
+      "passed": 19,
+      "n": 20,
+      "failures": [
+        96
+      ],
+      "avg_calls": 11.95,
+      "total_calls": 227
+    },
+    "gpt4o_teacher_student": {
+      "passed": 18,
+      "n": 20,
+      "failures": [
+        86,
+        96
+      ],
+      "avg_calls": 12.22,
+      "total_calls": 220
+    }
+  }
+}
