@@ -1,0 +1,14 @@
+{
+  "tools": [
+    "list_user_orders",
+    "find_product_variant",
+    "get_order_summary",
+    "calculate_price_difference",
+    "authenticate_user",
+    "get_order_action_availability",
+    "swap_order_items",
+    "list_user_actionable_orders"
+  ],
+  "source": "gpt-4o-mini solved trajectories (SELF)",
+  "generator": "o4-mini_2025-04-16"
+}

@@ -1,0 +1,26 @@
+{
+  "experiment": "self-improvement (gpt-4o-mini mines from own trajectories)",
+  "model": "gpt-4o-mini_2024-07-18",
+  "temperature": 0.0,
+  "n_tasks": 50,
+  "passed": 41,
+  "pass_rate": 0.82,
+  "failures": [
+    8,
+    17,
+    20,
+    22,
+    25,
+    26,
+    27,
+    31,
+    45
+  ],
+  "comparison": {
+    "base": 39,
+    "teacher_student (gpt4o->mini)": 46,
+    "self_improve (mini->mini)": 41,
+    "delta_vs_base": 2,
+    "delta_vs_teacher_student": -5
+  }
+}

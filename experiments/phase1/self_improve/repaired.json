@@ -1,0 +1,14 @@
+{
+  "kept": [
+    "list_user_orders",
+    "find_product_variant",
+    "calculate_price_difference",
+    "get_order_action_availability",
+    "list_user_actionable_orders"
+  ],
+  "dropped": [
+    "get_order_summary",
+    "authenticate_user",
+    "swap_order_items"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "experiment": "held-out test split validation (tasks 80-99)",
+  "model": "gpt-4o-mini_2024-07-18",
+  "temperature": 0.0,
+  "task_split": "test",
+  "task_ids": [
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99
+  ],
+  "results": {
+    "base": {
+      "passed": 16,
+      "n": 20,
+      "pass_rate": 0.8,
+      "failures": [
+        85,
+        89,
+        96,
+        99
+      ]
+    },
+    "teacher_student": {
+      "passed": 16,
+      "n": 20,
+      "pass_rate": 0.8,
+      "failures": [
+        80,
+        87,
+        89,
+        96
+      ]
+    },
+    "self_improve": {
+      "passed": 14,
+      "n": 20,
+      "pass_rate": 0.7,
+      "failures": [
+        80,
+        89,
+        93,
+        95,
+        96,
+        99
+      ]
+    }
+  },
+  "summary": {
+    "base": 16,
+    "teacher_student": 16,
+    "self_improve": 14,
+    "teacher_student_delta": 0,
+    "self_improve_delta": -2
+  }
+}
